@@ -1,0 +1,20 @@
+version: 1
+paths:
+  requirements: docs/requirements.md
+  implementation: docs/implementation.md
+  migrations: []
+agent:
+  kind: claude
+  command:
+  - claude
+  - --dangerously-skip-permissions
+  model: claude-fable-5
+  reasoning_effort: high
+  timeout_seconds: 21600
+  goal_fallback: false
+checks:
+- name: configure-project-verification
+  command:
+  - REPLACE_WITH_PROJECT_VERIFICATION_COMMAND
+  required: true
+  continue_on_failure: false
