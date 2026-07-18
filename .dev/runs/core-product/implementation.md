@@ -56,7 +56,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: none
 - Outcome: A strict TypeScript Next.js application uses one package manager, has Supabase local-development configuration, environment validation, the approved typography and design tokens, initial public/member route shells, and standard scripts for formatting, linting, typechecking, unit tests, database tests, Playwright tests, and production builds.
 - Proof: Fresh install succeeds; environment failures are explicit; formatter, lint, typecheck, focused tests, and production build pass; route shells render responsively with keyboard-visible focus and no generic card-dashboard styling.
-- Status: ready
+- Status: complete; C01 reconciled cleanly with non-blocking notes by R02 (R01 infrastructure-blocked)
 
 ## T02 — Implement identity, invitations, memberships, and authorization
 
@@ -64,7 +64,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T01
 - Outcome: Versioned migrations define profiles, Juntos, invitations, and memberships; normalized invitations can be claimed only by the matching verified identity; active memberships govern access independently per Junto; deactivation revokes access immediately; admin authority remains Junto-scoped.
 - Proof: Database tests cover normalized-email matching, successful and rejected claims, duplicate claims, multiple memberships, member/admin boundaries, deactivation, unauthenticated denial, and denied cross-user/cross-Junto access using fixtures for at least two Juntos.
-- Status: blocked
+- Status: ready; database-test execution requires a Docker-capable environment, and local signup configuration must be decided deliberately
 
 ## T03 — Deliver the invitation-gated member entry and portal shell
 

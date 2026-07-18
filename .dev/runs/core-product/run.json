@@ -7,12 +7,32 @@
     "C01": {
       "task": "T01",
       "role": "builder",
-      "state": "ready",
+      "state": "integrated",
       "branch": "dev/core-product-t01",
       "worktree": "/home/thomas/projects/junto-worktrees/core-product-t01",
-      "base": null,
-      "result": null,
-      "process_handle": null
+      "base": "51d39dc920b4fee48b41f24c2fbdba9f34f204c3",
+      "result": "db9c1c8714b1410fafc79935e9b04e15034f46af",
+      "process_handle": "proc_5a3dbe0270a2"
+    },
+    "R01": {
+      "task": "T01",
+      "role": "reconciler",
+      "state": "infrastructure_blocked",
+      "branch": "dev/core-product-t01",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t01",
+      "base": "51d39dc920b4fee48b41f24c2fbdba9f34f204c3",
+      "result": "db9c1c8714b1410fafc79935e9b04e15034f46af",
+      "process_handle": "proc_a56b8cf59b16"
+    },
+    "R02": {
+      "task": "T01",
+      "role": "reconciler",
+      "state": "completed_clean_with_notes",
+      "branch": "dev/core-product-t01",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t01",
+      "base": "51d39dc920b4fee48b41f24c2fbdba9f34f204c3",
+      "result": "db9c1c8714b1410fafc79935e9b04e15034f46af",
+      "process_handle": "proc_69e6ee78c70a"
     }
   }
 }
