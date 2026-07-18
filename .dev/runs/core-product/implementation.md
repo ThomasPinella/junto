@@ -64,7 +64,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T01
 - Outcome: Versioned migrations define profiles, Juntos, invitations, and memberships; normalized invitations can be claimed only by the matching verified identity; active memberships govern access independently per Junto; deactivation revokes access immediately; admin authority remains Junto-scoped.
 - Proof: Database tests cover normalized-email matching, successful and rejected claims, duplicate claims, multiple memberships, member/admin boundaries, deactivation, unauthenticated denial, and denied cross-user/cross-Junto access using fixtures for at least two Juntos.
-- Status: ready; database-test execution requires a Docker-capable environment, and local signup configuration must be decided deliberately
+- Status: ready; local signup configuration must be decided deliberately
 
 ## T03 — Deliver the invitation-gated member entry and portal shell
 
