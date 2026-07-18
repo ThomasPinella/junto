@@ -1,62 +1,4 @@
-# Meetings and Essays
-
-Meetings provide the recurring structure; essays are the center of the product.
-
-## 5. Meetings
-
-Meetings organize essays around a particular gathering.
-
-A meeting includes:
-
-- junto_id;
-- meeting date;
-- optional title;
-- optional discussion theme;
-- optional description;
-- optional location;
-- optional essay deadline;
-- status such as upcoming, completed, or cancelled;
-- creation and update timestamps.
-
-Example:
-
-June 22, 2026
-Theme: What do we owe the future?
-Location: Thomas’s apartment
-
-### Meeting behavior
-
-Members can associate an essay with a meeting.
-
-A meeting page can display:
-
-- the date;
-- title or theme;
-- description;
-- essays submitted for that meeting;
-- authors;
-- optional meeting recording;
-- comments or discussion associated with each essay.
-
-A meeting should not be represented as a literal storage folder. It is a database entity that behaves like a folder in the interface.
-
-Example URL:
-
-/juntos/san-diego/meetings/2026-06-22
-
-### Deleting meetings
-
-Meetings should normally be archived rather than permanently deleted.
-
-An administrator should not be able to accidentally destroy essays by deleting a meeting.
-
-If a meeting is archived:
-
-- its essays remain intact;
-- its historical public page may remain available;
-- it no longer appears among upcoming meetings.
-
-## 6. Essays
+# 6. Essays
 
 An essay belongs to:
 
@@ -81,7 +23,7 @@ An essay contains:
 - optional cover image;
 - optional reading-time estimate.
 
-### 6.1 Writing and editing
+## 6.1 Writing and editing
 
 Members can write directly in the application or paste an essay into a Markdown editor.
 
@@ -110,7 +52,7 @@ Basic Markdown support should include:
 
 The application should sanitize rendered HTML and prevent scripts or dangerous markup.
 
-### 6.2 Meeting assignment
+## 6.2 Meeting assignment
 
 When creating an essay, a member selects the meeting it belongs to.
 
@@ -123,7 +65,7 @@ Members may submit an essay after the meeting date.
 
 For the MVP, an essay should normally belong to exactly one meeting. The schema may allow a nullable meeting reference for future standalone essays, but the main product flow should encourage meeting assignment.
 
-### 6.3 Publication status
+## 6.3 Publication status
 
 Publication status and visibility are separate concepts.
 
@@ -142,7 +84,7 @@ Published + public
 
 A draft must never appear in public or member-facing essay listings other than the author’s own dashboard and authorized administrative views.
 
-### 6.4 Public essays
+## 6.4 Public essays
 
 A published public essay:
 
@@ -158,7 +100,7 @@ Example:
 
 /essays/what-we-owe-the-future
 
-### 6.5 Members-only essays
+## 6.5 Members-only essays
 
 A published members-only essay:
 
@@ -177,7 +119,7 @@ rather than simply:
 
 Private
 
-### 6.6 Changing visibility
+## 6.6 Changing visibility
 
 An author or authorized administrator may change a published essay from public to members-only.
 
@@ -192,7 +134,7 @@ After the change:
 
 Changing an essay from members-only to public should require an explicit confirmation because it exposes the essay to the internet.
 
-### 6.7 Stable URLs
+## 6.7 Stable URLs
 
 Essay slugs should be unique within an appropriate scope.
 
