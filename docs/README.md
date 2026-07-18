@@ -17,6 +17,14 @@ What Junto is, the underlying practice, and the product’s north stars. These d
 - [Vision and practice](./overview/vision-and-practice.md) — the Junto practice, product summary, and concise product definition (§19)
 - [Product principles (§1)](./overview/product-principles.md)
 
+### Design
+
+The visual system translates the product principles into a contemporary civic-journal identity. It defines the shared visual language and shows how it should adapt between the public literary archive and the focused private member portal.
+
+- [Design overview](./design/README.md) — creative direction and documentation map
+- [Visual system and tokens](../DESIGN.md) — normative palette, typography, spacing, components, rationale, and constraints
+- [Surface design guidelines](./design/surface-guidelines.md) — public archive, reading, meetings, authors, discussion, member portal, editor, imagery, motion, and responsive behavior
+
 ### Users, membership, and Juntos
 
 Roles, invitations, memberships, and multi-chapter behavior. These documents define who can use Junto, how chapter access is granted, and how independent Juntos remain isolated.
