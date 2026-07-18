@@ -16,9 +16,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:db": "supabase test db",
+    "test:db": "supabase test db --network-id junto-local",
     "test:e2e": "playwright test",
-    "db:start": "supabase start",
+    "db:start": "bash scripts/start-local-supabase.sh",
     "db:stop": "supabase stop"
   },
   "dependencies": {
