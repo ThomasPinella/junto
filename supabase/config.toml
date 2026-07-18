@@ -173,6 +173,13 @@ enable_refresh_token_rotation = true
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
+# Signup stays enabled so invited people can self-serve authenticate with
+# email magic link/OTP, but user creation is gated by the
+# before_user_created hook below: any email without a pending, unexpired
+# invitation is rejected before an auth user exists. This preserves the
+# strict invitation-gated product model (docs/membership/
+# authentication-and-membership.md §3.1) at the auth layer; RLS and
+# claim_invitations() enforce the same rule at the database layer.
 enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false
@@ -276,9 +283,12 @@ max_frequency = "5s"
 # inactivity_timeout = "8h"
 
 # This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.
-# [auth.hook.before_user_created]
-# enabled = true
-# uri = "pg-functions://postgres/auth/before-user-created-hook"
+# Junto: rejects signups whose normalized email has no pending, unexpired
+# invitation (public.before_user_created_hook, migration
+# 20260718120200_invitation_claiming_and_signup_gate.sql).
+[auth.hook.before_user_created]
+enabled = true
+uri = "pg-functions://postgres/public/before_user_created_hook"
 
 # This hook runs before a token is issued and allows you to add additional claims based on the authentication method used.
 # [auth.hook.custom_access_token]
