@@ -34,10 +34,10 @@ with the offending variable named; see `.env.example` for the full list.
 | `pnpm test:e2e`     | Playwright E2E (builds and serves the app itself) |
 | `pnpm build`        | Production build                                  |
 
-`test:db` and `db:start` need Docker for the local Supabase stack. `db:start`
-uses the `junto-local` Docker network, whose published ports bind only to
-`127.0.0.1`; the development database and dashboards are not exposed on the
-VPS's public interfaces. Run `pnpm db:stop` when finished.
+`test:db` and `db:start` need Docker for the local Supabase stack. This host's
+Docker daemon publishes unspecified ports to `127.0.0.1` by default, so the
+development database and dashboards are not exposed on the VPS's public
+interfaces. Run `pnpm db:stop` when finished.
 
 ## Layout
 
