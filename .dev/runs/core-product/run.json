@@ -1,7 +1,18 @@
 {
   "run_id": "core-product",
-  "stage": "planning",
-  "baseline": null,
+  "stage": "building",
+  "baseline": "58c0848e502d986802d19f93d882756964a5fa0c",
   "review_baseline": null,
-  "assignments": {}
+  "assignments": {
+    "C01": {
+      "task": "T01",
+      "role": "builder",
+      "state": "ready",
+      "branch": "dev/core-product-t01",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t01",
+      "base": null,
+      "result": null,
+      "process_handle": null
+    }
+  }
 }
