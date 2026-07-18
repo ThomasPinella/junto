@@ -16,7 +16,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:db": "supabase test db",
+    "test:db": "pnpm test:db:pgtap && pnpm test:db:auth",
+    "test:db:pgtap": "supabase test db",
+    "test:db:auth": "node supabase/tests/auth/verify-mailbox-ownership.mjs",
     "test:e2e": "playwright test",
     "db:start": "supabase start",
     "db:stop": "supabase stop"
