@@ -1,0 +1,25 @@
+.frame {
+  max-width: 76rem;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 5vw, 40px);
+  padding-block: var(--space-3xl);
+}
+
+.label {
+  font-family: var(--font-sans);
+  font-size: var(--label-size);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.title {
+  margin-top: var(--space-md);
+}
+
+.body {
+  max-width: var(--measure-reading);
+  margin-top: var(--space-lg);
+}

@@ -1,0 +1,35 @@
+.label {
+  font-family: var(--font-sans);
+  font-size: var(--label-size);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.display {
+  max-width: 24ch;
+  margin-top: var(--space-lg);
+  font-size: clamp(2.5rem, 1.75rem + 4vw, var(--display-size));
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+}
+
+.lede {
+  max-width: var(--measure-reading);
+  margin-top: var(--space-xl);
+  font-size: var(--body-lg-size);
+  line-height: 1.7;
+}
+
+.rule {
+  margin-block: var(--space-2xl);
+}
+
+.note {
+  max-width: var(--measure-reading);
+  margin-top: var(--space-lg);
+  color: var(--color-muted);
+}

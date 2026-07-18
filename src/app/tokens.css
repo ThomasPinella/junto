@@ -1,0 +1,44 @@
+/* Design tokens transcribed from DESIGN.md front matter (colors, typography,
+   rounded, spacing). DESIGN.md is normative; change it first, then this file. */
+:root {
+  --color-canvas: #f3f0e8;
+  --color-surface: #fbfaf6;
+  --color-ink: #1c1c18;
+  --color-muted: #66635b;
+  --color-rule: #d5d0c5;
+  --color-accent: #7a302b;
+  --color-accent-hover: #642622;
+  --color-accent-contrast: #ffffff;
+  --color-focus: #9a3f38;
+
+  /* next/font exposes --font-newsreader and --font-instrument-sans */
+  --font-serif: var(--font-newsreader), "Newsreader", georgia, serif;
+  --font-sans:
+    var(--font-instrument-sans), "Instrument Sans", system-ui, sans-serif;
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+
+  --radius-none: 0;
+  --radius-subtle: 2px;
+  --radius-control: 4px;
+
+  --masthead-size: 2.25rem;
+  --masthead-tracking: 0.08em;
+  --display-size: 4rem;
+  --h1-size: 3rem;
+  --h2-size: 2rem;
+  --body-lg-size: 1.25rem;
+  --body-size: 1.125rem;
+  --ui-size: 1rem;
+  --label-size: 0.75rem;
+  --label-tracking: 0.08em;
+
+  /* 65–72ch reading measure (DESIGN.md, "Essays") */
+  --measure-reading: 68ch;
+}

@@ -1,0 +1,17 @@
+node_modules
+.next
+pnpm-lock.yaml
+playwright-report
+test-results
+next-env.d.ts
+supabase/.temp
+# product/design documentation is owned by its authors, not the formatter
+docs
+DESIGN.md
+AGENTS.md
+CLAUDE.md
+skills-lock.json
+.dev
+.agents
+.developer
+.claude

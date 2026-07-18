@@ -1,0 +1,20 @@
+.label {
+  font-family: var(--font-sans);
+  font-size: var(--label-size);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.title {
+  margin-top: var(--space-md);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-md);
+  max-width: var(--measure-reading);
+  margin-top: var(--space-lg);
+}

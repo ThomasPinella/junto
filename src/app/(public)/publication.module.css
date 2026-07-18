@@ -1,0 +1,27 @@
+/* Shared styles for the public section shells (archive, meetings, authors,
+   about): text-led editorial pages, no card grids. */
+
+.lede {
+  max-width: var(--measure-reading);
+  margin-top: var(--space-lg);
+  font-size: var(--body-lg-size);
+  line-height: 1.7;
+}
+
+.rule {
+  margin-block: var(--space-xl);
+}
+
+.empty {
+  max-width: var(--measure-reading);
+  font-style: italic;
+  color: var(--color-muted);
+}
+
+.prose {
+  display: grid;
+  gap: var(--space-lg);
+  max-width: var(--measure-reading);
+  font-size: var(--body-lg-size);
+  line-height: 1.7;
+}

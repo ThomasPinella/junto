@@ -1,0 +1,119 @@
+@import "./tokens.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-serif);
+  font-size: var(--body-size);
+  line-height: 1.65;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+}
+
+h1 {
+  font-size: clamp(2.25rem, 1.5rem + 3vw, var(--h1-size));
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 1.25rem + 1.25vw, var(--h2-size));
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+}
+
+hr {
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background-color: var(--color-rule);
+}
+
+/* Keyboard focus must stay visible everywhere
+   (AGENTS.md, "UI and content standards"). */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-subtle);
+}
+
+::selection {
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.skip-link {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skip-link:focus-visible {
+  position: fixed;
+  top: var(--space-sm);
+  left: var(--space-sm);
+  z-index: 10;
+  width: auto;
+  height: auto;
+  padding: var(--space-sm) var(--space-md);
+  clip-path: none;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-control);
+  font-family: var(--font-sans);
+  font-size: var(--ui-size);
+  text-decoration: none;
+  white-space: normal;
+}
+
+/* Motion clarifies state; it never decorates
+   (docs/design/surface-guidelines.md §12). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
