@@ -173,6 +173,26 @@
       "base": "80c6881c7b5e00b610f515e3ee273c8d28d38de7",
       "result": "a26c85ff5c6c766498ddebf2b05affff2c329f95",
       "process_handle": "proc_82fefb836f41"
+    },
+    "C09": {
+      "task": "T04",
+      "role": "builder",
+      "state": "integrated",
+      "branch": "dev/core-product-t04",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t04",
+      "base": "fe40723b5149640d2b021fcf6f1c797964a96788",
+      "result": "c389f34b6bcbfa7e891c6e78674f565a89e82a52",
+      "process_handle": "proc_b1d035c33bb0"
+    },
+    "R10": {
+      "task": "T04",
+      "role": "reconciler",
+      "state": "completed_clean_with_notes",
+      "branch": "dev/core-product-t04",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t04",
+      "base": "fe40723b5149640d2b021fcf6f1c797964a96788",
+      "result": "c389f34b6bcbfa7e891c6e78674f565a89e82a52",
+      "process_handle": "proc_eac86f817b37"
     }
   }
 }

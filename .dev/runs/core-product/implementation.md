@@ -80,7 +80,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T03
 - Outcome: Versioned schema and policies support upcoming, completed, cancelled, and archived meetings; Junto admins can create, edit, and archive meetings; members can view authorized meeting details; visitors can view safe public meeting pages without private essay counts or sensitive location data.
 - Proof: Database and integration tests cover admin/member/visitor behavior, meeting-to-Junto integrity, archive semantics, denied cross-Junto writes and reads, and public-page non-disclosure; Playwright exercises admin creation/edit/archive and public/member meeting views.
-- Status: ready; T03 is integrated and R09 explicitly unblocked this assignment.
+- Status: complete; cumulative T04 integrated at `c389f34b6bcbfa7e891c6e78674f565a89e82a52` after R10 returned clean with non-blocking notes. Meeting schema/RLS, selected-Junto admin actions, member program/detail, safe owner-rights public projection, public archive/detail, no-delete archive semantics, and bounded outage rendering are verified.
 
 ## T05 — Implement secure essay storage, rendering, and publication rules
 
@@ -88,7 +88,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T04
 - Outcome: Versioned schema and policies support meeting-linked essays, author ownership, draft/published status, public/members-only visibility, stable global slugs, publication timestamps, and safe Markdown rendering while enforcing same-Junto meeting assignment and author-only draft access.
 - Proof: Database and integration tests cover ownership, cross-Junto meeting rejection, draft isolation, same-Junto members-only access, public access, slug stability and uniqueness, unsafe Markdown sanitization, unpublishing, and both directions of visibility transition without metadata leakage.
-- Status: blocked
+- Status: ready; T04 is integrated and R10 explicitly unblocked this assignment.
 
 ## T06 — Deliver the member essay workspace and publishing journey
 
