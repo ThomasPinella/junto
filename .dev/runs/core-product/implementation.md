@@ -96,7 +96,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T05
 - Outcome: Members can list their drafts and published work, create or paste an essay, select a meeting, edit Markdown, preview the actual reading typography, save a draft, publish, unpublish, and deliberately change visibility; members cannot edit another author's work.
 - Proof: Component/integration tests cover editor validation and state transitions; Playwright demonstrates draft creation, save/reload, preview, public publication, members-only publication, unpublishing, and explicit confirmation before exposing a members-only essay publicly.
-- Status: ready; T05 is integrated and R12 approved unblocking after evidence synchronization.
+- Status: complete; cumulative corrected T06 integrated at `2b04d3f07f3c8c5d010641fbd2aa8c19534b9343`. C13 delivered the protected author workspace; C15 closed privacy-ordering, teardown-integrity, and public-URL evidence gaps. R16 returned clean. Independent integration checks passed with 145 unit/component tests and production build.
 
 ## T07 — Deliver the public civic-journal archive
 
@@ -104,7 +104,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T06
 - Outcome: Visitors can use a meeting-led public homepage, essay archive, essay reading pages, author pages, and meeting pages; browsing by author and meeting works; implemented surfaces follow the approved editorial hierarchy and reveal only published public content.
 - Proof: Integration tests verify public queries and metadata include only eligible records; Playwright covers homepage-to-essay, archive-by-author, archive-by-meeting, author, and meeting journeys on desktop and mobile; accessibility checks and visual review confirm readable long-form typography and keyboard operation.
-- Status: blocked
+- Status: ready; corrected T06 is integrated and R16 approved unblocking.
 
 ## T08 — Prove the integrated core-product journeys and deployment readiness
 

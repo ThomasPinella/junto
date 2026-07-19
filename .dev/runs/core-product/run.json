@@ -239,6 +239,58 @@
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "effort": "medium"
+    },
+    "C13": {
+      "task": "T06",
+      "role": "builder",
+      "state": "integrated_with_fix",
+      "branch": "dev/core-product-t06",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t06",
+      "base": "3947e3cb9452a9d16ee846ab9aa819cb61b42b1d",
+      "result": "0e440bf9f0b5f4c7457c1bfa184b240355402add",
+      "process_handle": "proc_f6adcc34e79b",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "medium"
+    },
+    "R14": {
+      "task": "T06",
+      "role": "reconciler",
+      "state": "completed_needs_fixes",
+      "branch": "dev/core-product-t06",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t06",
+      "base": "3947e3cb9452a9d16ee846ab9aa819cb61b42b1d",
+      "result": "0e440bf9f0b5f4c7457c1bfa184b240355402add",
+      "process_handle": "proc_6d94ceb828a6",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "medium"
+    },
+    "C15": {
+      "task": "T06-fix-privacy-ordering",
+      "role": "builder",
+      "state": "integrated",
+      "branch": "dev/core-product-t06",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t06",
+      "base": "0e440bf9f0b5f4c7457c1bfa184b240355402add",
+      "result": "2b04d3f07f3c8c5d010641fbd2aa8c19534b9343",
+      "process_handle": "proc_afa1df5a676e",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "medium"
+    },
+    "R16": {
+      "task": "T06-corrected",
+      "role": "reconciler",
+      "state": "completed_clean",
+      "branch": "dev/core-product-t06",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t06",
+      "base": "3947e3cb9452a9d16ee846ab9aa819cb61b42b1d",
+      "result": "2b04d3f07f3c8c5d010641fbd2aa8c19534b9343",
+      "process_handle": "proc_8ef5b7250dc4",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "medium"
     }
   }
 }
