@@ -88,7 +88,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T04
 - Outcome: Versioned schema and policies support meeting-linked essays, author ownership, draft/published status, public/members-only visibility, stable global slugs, publication timestamps, and safe Markdown rendering while enforcing same-Junto meeting assignment and author-only draft access.
 - Proof: Database and integration tests cover ownership, cross-Junto meeting rejection, draft isolation, same-Junto members-only access, public access, slug stability and uniqueness, unsafe Markdown sanitization, unpublishing, and both directions of visibility transition without metadata leakage.
-- Status: ready; T04 is integrated and R10 explicitly unblocked this assignment.
+- Status: complete; cumulative T05 integrated at `35429c246e5ce46de7b0902a3e599d8107450cff`. C10 delivered secure essay storage/RLS/public projection/Markdown/data seams; C11 closed the SQL-null confirmation bypass with literal-TRUE semantics and real author/admin proof. R12 found no implementation, security, documentation, or test defect after one uncommitted evidence inventory line was synchronized. Independent integration checks passed.
 
 ## T06 — Deliver the member essay workspace and publishing journey
 
@@ -96,7 +96,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T05
 - Outcome: Members can list their drafts and published work, create or paste an essay, select a meeting, edit Markdown, preview the actual reading typography, save a draft, publish, unpublish, and deliberately change visibility; members cannot edit another author's work.
 - Proof: Component/integration tests cover editor validation and state transitions; Playwright demonstrates draft creation, save/reload, preview, public publication, members-only publication, unpublishing, and explicit confirmation before exposing a members-only essay publicly.
-- Status: blocked
+- Status: ready; T05 is integrated and R12 approved unblocking after evidence synchronization.
 
 ## T07 — Deliver the public civic-journal archive
 

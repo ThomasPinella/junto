@@ -193,6 +193,52 @@
       "base": "fe40723b5149640d2b021fcf6f1c797964a96788",
       "result": "c389f34b6bcbfa7e891c6e78674f565a89e82a52",
       "process_handle": "proc_eac86f817b37"
+    },
+    "C10": {
+      "task": "T05",
+      "role": "builder",
+      "state": "integrated_with_fix",
+      "branch": "dev/core-product-t05",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t05",
+      "base": "33339be01fb3dfe9d7a72246892fcb2393b89d4f",
+      "result": "4a0361137016528d7b504c8266550ad499e7c576",
+      "process_handle": "proc_f736b326fb12"
+    },
+    "R11": {
+      "task": "T05",
+      "role": "reconciler",
+      "state": "completed_needs_fixes",
+      "branch": "dev/core-product-t05",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t05",
+      "base": "33339be01fb3dfe9d7a72246892fcb2393b89d4f",
+      "result": "4a0361137016528d7b504c8266550ad499e7c576",
+      "process_handle": "proc_b515e67a3637"
+    },
+    "C11": {
+      "task": "T05-fix-null-confirmation",
+      "role": "builder",
+      "state": "integrated",
+      "branch": "dev/core-product-t05",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t05",
+      "base": "4a0361137016528d7b504c8266550ad499e7c576",
+      "result": "35429c246e5ce46de7b0902a3e599d8107450cff",
+      "process_handle": "proc_131cb6aff4da",
+      "provider": "anthropic",
+      "model": "claude-code",
+      "effort": "high"
+    },
+    "R12": {
+      "task": "T05-fix-null-confirmation",
+      "role": "reconciler",
+      "state": "completed_clean_after_evidence_sync",
+      "branch": "dev/core-product-t05",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t05",
+      "base": "4a0361137016528d7b504c8266550ad499e7c576",
+      "result": "35429c246e5ce46de7b0902a3e599d8107450cff",
+      "process_handle": "proc_36bc375fbd1e",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "medium"
     }
   }
 }
