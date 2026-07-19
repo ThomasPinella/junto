@@ -54,6 +54,7 @@ export async function listActiveMemberships(
 }
 
 const rosterMemberRowSchema = z.object({
+  id: z.uuid(),
   user_id: z.uuid(),
   role: z.enum(["member", "admin"]),
 });
@@ -65,6 +66,7 @@ const rosterProfileRowSchema = z.object({
 });
 
 export interface RosterMember {
+  membershipId: string;
   userId: string;
   role: "member" | "admin";
   displayName: string;
@@ -81,7 +83,7 @@ export async function listActiveRoster(
 ): Promise<RosterMember[]> {
   const { data: memberData, error: memberError } = await supabase
     .from("junto_members")
-    .select("user_id, role")
+    .select("id, user_id, role")
     .eq("junto_id", juntoId)
     .eq("status", "active");
   if (memberError) {
@@ -120,6 +122,7 @@ export async function listActiveRoster(
       }
       return [
         {
+          membershipId: member.id,
           userId: member.user_id,
           role: member.role,
           displayName: profile.display_name,

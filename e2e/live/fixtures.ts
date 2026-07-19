@@ -85,6 +85,7 @@ export const ESSAY_COMEMBER_EMAIL = "c10-t05-comember@example.com";
 export const ESSAY_ADMIN_EMAIL = "c11-t05-admin@example.com";
 export const PUBLIC_AUTHOR_A_EMAIL = "c17-public-maya@example.com";
 export const PUBLIC_AUTHOR_B_EMAIL = "c17-public-daniel@example.com";
+export const INTEGRATED_MEMBER_EMAIL = "c22-t08-invitee@example.com";
 
 const FIXTURE_JUNTOS = [
   JUNTO_A,
@@ -103,6 +104,7 @@ const FIXTURE_EMAILS = [
   ESSAY_ADMIN_EMAIL,
   PUBLIC_AUTHOR_A_EMAIL,
   PUBLIC_AUTHOR_B_EMAIL,
+  INTEGRATED_MEMBER_EMAIL,
 ] as const;
 
 function isoDateFromToday(offsetDays: number): string {
@@ -617,7 +619,9 @@ async function seed(): Promise<void> {
       {
         junto_id: JUNTO_P.id,
         email_normalized: PUBLIC_AUTHOR_A_EMAIL,
-        role: "member",
+        // T08 uses this existing public-author identity as Poplar's admin so
+        // the complete loop can begin with a real UI-created invitation.
+        role: "admin",
         status: "pending",
       },
       {

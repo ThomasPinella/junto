@@ -68,6 +68,7 @@ function parseEnv<Schema extends z.ZodObject>(
 
 export type SiteEnv = z.infer<typeof siteEnvSchema>;
 export type SupabaseEnv = z.infer<typeof supabaseEnvSchema>;
+export type ApplicationEnv = SiteEnv & SupabaseEnv;
 
 export function loadSiteEnv(source: EnvSource = process.env): SiteEnv {
   return parseEnv(siteEnvSchema, source);
@@ -75,4 +76,10 @@ export function loadSiteEnv(source: EnvSource = process.env): SiteEnv {
 
 export function loadSupabaseEnv(source: EnvSource = process.env): SupabaseEnv {
   return parseEnv(supabaseEnvSchema, source);
+}
+
+export function loadApplicationEnv(
+  source: EnvSource = process.env,
+): ApplicationEnv {
+  return { ...loadSiteEnv(source), ...loadSupabaseEnv(source) };
 }
