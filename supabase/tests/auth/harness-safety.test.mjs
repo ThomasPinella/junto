@@ -32,6 +32,7 @@ const LOCAL_MAILPIT = "http://127.0.0.1:54324";
 // fail with assertions instead of crashing.
 const FIXTURE_FALLBACK = {
   juntoId: "c0300000-0000-4a00-8a00-000000000001",
+  juntoSlug: "c03-auth-regression",
   invitedAdmin: "c03-invited-admin@example.com",
   invitedMember: "c03-invited-member@example.com",
   uninvited: "c03-uninvited@example.com",
@@ -148,40 +149,69 @@ function redirectAttackStub(calls) {
 // Stateful stub simulating a fully healthy local stack (GoTrue + PostgREST +
 // Mailpit) with realistic strict response shapes, so the complete in-process
 // main() run — 19 functional checks plus preparation and teardown — passes.
+// It is deliberately closed-world: any unexpected method/path combination,
+// unscoped privileged mutation, malformed seed body, or out-of-sequence
+// admission attempt throws, so a harness that drifts from the documented
+// request flow cannot pass. Invitation admission is modeled from the seeded
+// invitations (as the before_user_created hook does), not from hardcoded
+// email comparisons, so a missing or wrong invitation seed breaks the flow.
 function simulatedHealthyStack(FIX, calls) {
-  const state = { users: [], members: [], mailbox: [] };
+  const state = {
+    juntoSeeded: false,
+    invitations: [],
+    users: [],
+    members: [],
+    mailbox: [],
+  };
   const TOKEN = "simtoken123abc";
   const SESSION = "sim-member-session";
+  const USER_IDS = {
+    [FIX.invitedAdmin]: "u-admin",
+    [FIX.invitedMember]: "u-member",
+  };
   return async (input, init = {}) => {
     record(calls, input, init);
     const u = new URL(String(input));
     const method = init.method ?? "GET";
     const body = init.body ? JSON.parse(init.body) : null;
+    const reject = (detail) => {
+      throw new Error(
+        `simulated stack rejected ${method} ${u.pathname}: ${detail}`,
+      );
+    };
+    const pendingInvitation = (email) =>
+      state.invitations.find(
+        (i) => i.email_normalized === email && i.status === "pending",
+      );
 
     // GoTrue
     if (u.pathname === "/auth/v1/signup" && method === "POST") {
-      if (body.email === FIX.uninvited) {
+      if (typeof body?.email !== "string" || typeof body?.password !== "string")
+        reject("signup requires an email and a password");
+      if (!pendingInvitation(body.email)) {
         return jsonResponse('{"msg":"Sign-ups are by invitation only."}', 403);
       }
       state.users.push({
-        id: "u-admin",
+        id: USER_IDS[body.email],
         email: body.email,
         email_confirmed_at: null,
       });
       return jsonResponse(
         JSON.stringify({
-          id: "u-admin",
+          id: USER_IDS[body.email],
           email: body.email,
           email_confirmed_at: null,
         }),
       );
     }
     if (u.pathname === "/auth/v1/otp" && method === "POST") {
-      if (body.email === FIX.uninvited) {
+      if (typeof body?.email !== "string" || body?.create_user !== true)
+        reject("otp requires an email and create_user");
+      if (!pendingInvitation(body.email)) {
         return jsonResponse('{"msg":"Sign-ups are by invitation only."}', 403);
       }
       state.users.push({
-        id: "u-member",
+        id: USER_IDS[body.email],
         email: body.email,
         email_confirmed_at: null,
       });
@@ -189,54 +219,133 @@ function simulatedHealthyStack(FIX, calls) {
       return jsonResponse("{}");
     }
     if (u.pathname === "/auth/v1/verify" && method === "POST") {
-      if (body.token_hash !== TOKEN) {
-        return jsonResponse('{"msg":"invalid token"}', 401);
-      }
-      const member = state.users.find((x) => x.id === "u-member");
-      if (member) member.email_confirmed_at = "2026-07-19T00:00:00Z";
+      const member = state.users.find((x) => x.email === FIX.invitedMember);
+      if (body?.type !== "magiclink" || body?.token_hash !== TOKEN || !member)
+        reject("verify requires the emailed magiclink token of a seeded user");
+      member.email_confirmed_at = "2026-07-19T00:00:00Z";
       return jsonResponse(
         JSON.stringify({ access_token: SESSION, user: member }),
       );
     }
     if (u.pathname === "/auth/v1/token" && method === "POST") {
-      return jsonResponse('{"error_code":"email_not_confirmed"}', 400);
+      if (u.searchParams.get("grant_type") !== "password")
+        reject("only the password grant is modeled");
+      const user = state.users.find((x) => x.email === body?.email);
+      if (!user || typeof body?.password !== "string")
+        reject("password grant requires an existing user email and password");
+      if (user.email_confirmed_at === null) {
+        return jsonResponse('{"error_code":"email_not_confirmed"}', 400);
+      }
+      reject("no confirmed-user password grant occurs in the healthy flow");
     }
     if (u.pathname === "/auth/v1/admin/users" && method === "GET") {
-      const email = u.searchParams.get("filter") ?? "";
-      const users = state.users.filter((x) => x.email === email);
-      return jsonResponse(JSON.stringify({ users }));
+      const email = u.searchParams.get("filter");
+      if (!email) reject("admin user listing requires a filter");
+      return jsonResponse(
+        JSON.stringify({ users: state.users.filter((x) => x.email === email) }),
+      );
     }
     if (u.pathname.startsWith("/auth/v1/admin/users/") && method === "DELETE") {
       const id = u.pathname.split("/").pop();
+      if (!state.users.some((x) => x.id === id))
+        reject(`no such auth user "${id}"`);
       state.users = state.users.filter((x) => x.id !== id);
       return jsonResponse("{}");
     }
 
     // PostgREST
     if (u.pathname === "/rest/v1/rpc/claim_invitations" && method === "POST") {
+      const member = state.users.find((x) => x.email === FIX.invitedMember);
+      const invitation = pendingInvitation(FIX.invitedMember);
+      if (
+        init.headers?.Authorization !== `Bearer ${SESSION}` ||
+        !member ||
+        member.email_confirmed_at === null ||
+        !invitation
+      )
+        reject(
+          "claiming requires the verified member session and a pending invitation",
+        );
+      invitation.status = "claimed";
       state.members.push({
-        user_id: "u-member",
-        role: "member",
+        user_id: member.id,
+        role: invitation.role,
         status: "active",
       });
       return jsonResponse(
-        JSON.stringify([{ junto_id: FIX.juntoId, member_role: "member" }]),
+        JSON.stringify([
+          { junto_id: FIX.juntoId, member_role: invitation.role },
+        ]),
       );
     }
     if (u.pathname === "/rest/v1/junto_members") {
+      if (u.searchParams.get("junto_id") !== `eq.${FIX.juntoId}`)
+        reject("junto_members access must be scoped to the fixture junto");
       if (method === "DELETE") {
         state.members = [];
         return emptyResponse(204);
       }
-      return jsonResponse(JSON.stringify(state.members));
+      if (method === "GET") return jsonResponse(JSON.stringify(state.members));
+      reject("unmodeled junto_members method");
     }
-    if (
-      u.pathname === "/rest/v1/junto_invitations" ||
-      u.pathname === "/rest/v1/juntos"
-    ) {
-      if (method === "POST") return emptyResponse(201);
-      if (method === "DELETE") return emptyResponse(204);
-      return jsonResponse("[]");
+    if (u.pathname === "/rest/v1/junto_invitations") {
+      if (method === "POST") {
+        if (!state.juntoSeeded)
+          reject("invitations must be seeded after the junto");
+        const expected = [
+          { email: FIX.invitedAdmin, role: "admin" },
+          { email: FIX.invitedMember, role: "member" },
+        ];
+        const exact =
+          Array.isArray(body) &&
+          body.length === expected.length &&
+          expected.every((e) =>
+            body.some(
+              (i) =>
+                i.junto_id === FIX.juntoId &&
+                i.email_normalized === e.email &&
+                i.role === e.role &&
+                i.status === "pending",
+            ),
+          );
+        if (!exact)
+          reject(
+            "invitation seed body must carry exactly the two pending fixture invitations",
+          );
+        state.invitations = body.map((i) => ({ ...i }));
+        return emptyResponse(201);
+      }
+      if (u.searchParams.get("junto_id") !== `eq.${FIX.juntoId}`)
+        reject("junto_invitations access must be scoped to the fixture junto");
+      if (method === "DELETE") {
+        state.invitations = [];
+        return emptyResponse(204);
+      }
+      if (method === "GET") return jsonResponse("[]");
+      reject("unmodeled junto_invitations method");
+    }
+    if (u.pathname === "/rest/v1/juntos") {
+      if (method === "POST") {
+        if (
+          body?.id !== FIX.juntoId ||
+          body?.slug !== FIX.juntoSlug ||
+          typeof body?.name !== "string" ||
+          body.name.length === 0 ||
+          body?.status !== "active" ||
+          body?.archive_visibility !== "public"
+        )
+          reject("junto seed body must carry the exact fixture junto");
+        state.juntoSeeded = true;
+        return emptyResponse(201);
+      }
+      if (u.searchParams.get("id") !== `eq.${FIX.juntoId}`)
+        reject("juntos access must be scoped to the fixture junto");
+      if (method === "DELETE") {
+        state.juntoSeeded = false;
+        return emptyResponse(204);
+      }
+      if (method === "GET") return jsonResponse("[]");
+      reject("unmodeled juntos method");
     }
 
     // Mailpit
@@ -245,9 +354,14 @@ function simulatedHealthyStack(FIX, calls) {
         state.mailbox = [];
         return emptyResponse(200);
       }
-      return jsonResponse(JSON.stringify({ messages: state.mailbox }));
+      if (method === "GET")
+        return jsonResponse(JSON.stringify({ messages: state.mailbox }));
+      reject("unmodeled Mailpit messages method");
     }
-    if (u.pathname.startsWith("/api/v1/message/")) {
+    if (u.pathname.startsWith("/api/v1/message/") && method === "GET") {
+      const id = u.pathname.split("/").pop();
+      if (!state.mailbox.some((m) => m.ID === id))
+        reject(`no such Mailpit message "${id}"`);
       return jsonResponse(
         JSON.stringify({
           Text: `Confirm: ${LOCAL_SUPABASE}/verify?token=${TOKEN}&type=magiclink`,
@@ -255,8 +369,77 @@ function simulatedHealthyStack(FIX, calls) {
         }),
       );
     }
-    return jsonResponse('{"unhandled":true}', 404);
+    reject("no handler models this request");
   };
+}
+
+// The complete request trace main() must produce against the healthy
+// simulated stack, in order: preparation cleanup (7), seed (2), the
+// functional flow (17), final cleanup (9, including the two created auth
+// users), and absence verification (7) — 42 requests. The simulated stack is
+// deterministic, so every URL is exact; the fixture identifiers are the only
+// values that would need normalizing against a real stack, and they are
+// pinned constants here.
+function expectedHealthyTrace(FIX) {
+  const adminList = (email) => [
+    "GET",
+    `${LOCAL_SUPABASE}/auth/v1/admin/users?filter=${encodeURIComponent(email)}`,
+  ];
+  const membersScoped = `${LOCAL_SUPABASE}/rest/v1/junto_members?junto_id=eq.${FIX.juntoId}`;
+  const invitationsScoped = `${LOCAL_SUPABASE}/rest/v1/junto_invitations?junto_id=eq.${FIX.juntoId}`;
+  const juntoScoped = `${LOCAL_SUPABASE}/rest/v1/juntos?id=eq.${FIX.juntoId}`;
+  const fkSafeCleanup = (adminDeletes) => [
+    ["DELETE", membersScoped],
+    ["DELETE", invitationsScoped],
+    adminList(FIX.invitedAdmin),
+    ...(adminDeletes
+      ? [["DELETE", `${LOCAL_SUPABASE}/auth/v1/admin/users/u-admin`]]
+      : []),
+    adminList(FIX.invitedMember),
+    ...(adminDeletes
+      ? [["DELETE", `${LOCAL_SUPABASE}/auth/v1/admin/users/u-member`]]
+      : []),
+    adminList(FIX.uninvited),
+    ["DELETE", juntoScoped],
+    ["DELETE", `${LOCAL_MAILPIT}/api/v1/messages`],
+  ];
+  return [
+    // Preparation cleanup against an already-clean stack: no users to delete.
+    ...fkSafeCleanup(false),
+    // Seed: the junto, then its two invitations.
+    ["POST", `${LOCAL_SUPABASE}/rest/v1/juntos`],
+    ["POST", `${LOCAL_SUPABASE}/rest/v1/junto_invitations`],
+    // Functional 1: uninvited signup and OTP are rejected with no auth user.
+    ["POST", `${LOCAL_SUPABASE}/auth/v1/signup`],
+    adminList(FIX.uninvited),
+    ["POST", `${LOCAL_SUPABASE}/auth/v1/otp`],
+    adminList(FIX.uninvited),
+    // Functional 2: invited admin cannot claim before mailbox verification.
+    ["DELETE", `${LOCAL_MAILPIT}/api/v1/messages`],
+    ["POST", `${LOCAL_SUPABASE}/auth/v1/signup`],
+    adminList(FIX.invitedAdmin),
+    ["POST", `${LOCAL_SUPABASE}/auth/v1/token?grant_type=password`],
+    ["GET", `${membersScoped}&select=user_id,role,status`],
+    // Functional 3: emailed-token verification, then the member claims.
+    ["DELETE", `${LOCAL_MAILPIT}/api/v1/messages`],
+    ["POST", `${LOCAL_SUPABASE}/auth/v1/otp`],
+    ["GET", `${LOCAL_MAILPIT}/api/v1/messages`],
+    ["GET", `${LOCAL_MAILPIT}/api/v1/message/m1`],
+    ["POST", `${LOCAL_SUPABASE}/auth/v1/verify`],
+    ["POST", `${LOCAL_SUPABASE}/rest/v1/rpc/claim_invitations`],
+    adminList(FIX.invitedMember),
+    ["GET", `${membersScoped}&select=user_id,role,status`],
+    // Final cleanup: now also deletes the two created auth users.
+    ...fkSafeCleanup(true),
+    // Absence verification.
+    ["GET", `${membersScoped}&select=user_id`],
+    ["GET", `${invitationsScoped}&select=id`],
+    ["GET", `${juntoScoped}&select=id`],
+    adminList(FIX.invitedAdmin),
+    adminList(FIX.invitedMember),
+    adminList(FIX.uninvited),
+    ["GET", `${LOCAL_MAILPIT}/api/v1/messages`],
+  ].map(([method, url]) => ({ method, url }));
 }
 
 // Stateful stub for the main() teardown-failure scenario: healthy until the
@@ -891,6 +1074,79 @@ async function main() {
     );
   }
   {
+    // A THROWN delete request (rejected fetch, not an HTTP error response)
+    // for the first auth user of an email must not skip the remaining users
+    // of that email, the remaining fixture emails, or the later classes.
+    const calls = [];
+    const usersFor = (email) => {
+      if (email === FIX.invitedAdmin) {
+        return [
+          { id: "u-a1", email },
+          { id: "u-a2", email },
+        ];
+      }
+      if (email === FIX.invitedMember) return [{ id: "u-m1", email }];
+      return [];
+    };
+    const base = cleanStackStub([]);
+    const err = await withStubbedFetch(
+      async (input, init = {}) => {
+        record(calls, input, init);
+        const u = new URL(String(input));
+        const method = init.method ?? "GET";
+        if (u.pathname === "/auth/v1/admin/users" && method === "GET") {
+          return jsonResponse(
+            JSON.stringify({ users: usersFor(u.searchParams.get("filter")) }),
+          );
+        }
+        if (u.pathname === "/auth/v1/admin/users/u-a1" && method === "DELETE") {
+          throw new TypeError("fetch failed: connection reset");
+        }
+        if (
+          u.pathname.startsWith("/auth/v1/admin/users/") &&
+          method === "DELETE"
+        ) {
+          return jsonResponse("{}");
+        }
+        return base(input, init);
+      },
+      () => rejection(harness.cleanup()),
+    );
+    ok(err !== null, "cleanup() rejects when one auth-user delete throws");
+    ok(
+      err !== null &&
+        /u-a1/.test(err.message) &&
+        /connection reset/i.test(err.message),
+      "the thrown deletion error is retained, naming the user and the cause",
+    );
+    const deletes = calls
+      .filter(
+        (c) => c.method === "DELETE" && c.url.includes("/auth/v1/admin/users/"),
+      )
+      .map((c) => c.url.split("/").pop());
+    ok(
+      deletes.join(",") === "u-a1,u-a2,u-m1",
+      `the thrown u-a1 delete did not skip u-a2 (same email) or u-m1 (later email) (saw: ${deletes.join(", ") || "none"})`,
+    );
+    const listedEmails = calls
+      .filter((c) => c.url.includes("/auth/v1/admin/users?filter="))
+      .map((c) => decodeURIComponent(c.url.split("filter=")[1]));
+    ok(
+      listedEmails.join(",") ===
+        `${FIX.invitedAdmin},${FIX.invitedMember},${FIX.uninvited}`,
+      `all 3 fixture emails were still listed after the thrown deletion (saw: ${listedEmails.join(", ") || "none"})`,
+    );
+    ok(
+      calls.some(
+        (c) => c.method === "DELETE" && c.url.includes("/rest/v1/juntos?"),
+      ) &&
+        calls.some(
+          (c) => c.method === "DELETE" && c.url.includes("/api/v1/messages"),
+        ),
+      "the junto delete and Mailpit clear were still attempted after the thrown deletion",
+    );
+  }
+  {
     const calls = [];
     const err = await withStubbedFetch(cleanStackStub(calls), () =>
       rejection(harness.cleanup()),
@@ -930,7 +1186,8 @@ async function main() {
     ok(err === null, "verifyFixturesAbsent() passes when nothing remains");
   }
 
-  // ── 8. In-process main(): healthy stack and teardown-failure scenario ──
+  // ── 8. In-process main(): healthy exact trace, preparation failure, and
+  //       teardown failure ─────────────────────────────────────────────────
   console.log(
     "\nFull in-process main() run against a simulated healthy stack:",
   );
@@ -959,16 +1216,61 @@ async function main() {
       outcome.checks === 19 && outcome.failures === 0,
       `all 19 functional checks pass against realistic response shapes (saw ${outcome.checks - outcome.failures}/${outcome.checks})`,
     );
+    const expected = expectedHealthyTrace(FIX);
     ok(
-      calls.length > 0 && calls.every((c) => c.redirect === "error"),
-      `every request across every path passes redirect:"error" (${calls.length} requests)`,
+      calls.length === expected.length,
+      `main() issued exactly ${expected.length} requests (saw ${calls.length})`,
+    );
+    const firstMismatch = expected.findIndex(
+      (e, i) =>
+        !calls[i] ||
+        calls[i].method !== e.method ||
+        calls[i].url !== e.url ||
+        calls[i].redirect !== "error",
     );
     ok(
-      calls.every(
-        (c) =>
-          c.url.startsWith(LOCAL_SUPABASE) || c.url.startsWith(LOCAL_MAILPIT),
-      ),
-      "every request stays on the loopback Supabase/Mailpit origins",
+      calls.length === expected.length && firstMismatch === -1,
+      firstMismatch === -1 && calls.length === expected.length
+        ? 'every request matches the expected trace in order — method, exact URL, and redirect:"error"'
+        : `every request matches the expected trace in order — method, exact URL, and redirect:"error" (mismatch at ${firstMismatch}: expected ${expected[firstMismatch]?.method} ${expected[firstMismatch]?.url}, saw ${
+            calls[firstMismatch]
+              ? `${calls[firstMismatch].method} ${calls[firstMismatch].url} redirect=${calls[firstMismatch].redirect}`
+              : "nothing"
+          })`,
+    );
+  }
+
+  console.log(
+    "\nmain() fails before seeding when stale-fixture preparation fails:",
+  );
+  {
+    const calls = [];
+    const mod = await importHarness("main-prep-failure");
+    const err = await withStubbedFetch(
+      overlayStub(calls, [
+        {
+          match: "/rest/v1/junto_members",
+          method: "DELETE",
+          respond: () => jsonResponse('{"message":"boom"}', 500),
+        },
+      ]),
+      () => withMutedConsole(() => rejection(mod.main())),
+    );
+    ok(
+      err !== null && /refusing to seed new fixtures/i.test(err.message),
+      "main() rejects before seeding, refusing to seed on a failed preparation",
+    );
+    ok(
+      err !== null && /500/.test(err.message),
+      "the preparation refusal surfaces the underlying cleanup failure",
+    );
+    ok(
+      calls.filter((c) => c.method === "POST").length === 0,
+      `zero seed POSTs occurred (saw ${calls.filter((c) => c.method === "POST").length})`,
+    );
+    ok(
+      calls.length === 7,
+      `all 7 preparation cleanup operations were still attempted before the refusal (saw ${calls.length})`,
     );
   }
 

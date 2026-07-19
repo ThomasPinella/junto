@@ -261,8 +261,9 @@ export async function cleanup() {
   //
   // Every fixture class AND every fixture identity is attempted
   // independently with its response checked: one listing or deletion failure
-  // never prevents the remaining attempts, and all failures are aggregated
-  // into one thrown error so the run cannot succeed while fixtures survive.
+  // — whether an error status or a thrown request — never prevents the
+  // remaining attempts, and all failures are aggregated into one thrown
+  // error so the run cannot succeed while fixtures survive.
   const errors = [];
   const attempt = async (label, fn) => {
     try {
@@ -297,12 +298,19 @@ export async function cleanup() {
     await attempt(`delete auth user(s) for ${email}`, async () => {
       const userErrors = [];
       for (const user of await adminUsersByEmail(email)) {
-        const res = await authFetch(`/auth/v1/admin/users/${user.id}`, {
-          method: "DELETE",
-          token: SERVICE_ROLE_KEY,
-        });
-        if (res.status >= 300) {
-          userErrors.push(`HTTP ${res.status} deleting user ${user.id}`);
+        // Each already-enumerated user is the smallest fixture unit: a
+        // thrown request (rejected fetch), not just an HTTP error response,
+        // for one user must not skip the remaining users of this email.
+        try {
+          const res = await authFetch(`/auth/v1/admin/users/${user.id}`, {
+            method: "DELETE",
+            token: SERVICE_ROLE_KEY,
+          });
+          if (res.status >= 300) {
+            userErrors.push(`HTTP ${res.status} deleting user ${user.id}`);
+          }
+        } catch (err) {
+          userErrors.push(`deleting user ${user.id}: ${err.message}`);
         }
       }
       if (userErrors.length > 0) {
