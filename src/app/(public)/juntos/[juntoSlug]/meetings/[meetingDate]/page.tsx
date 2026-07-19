@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+
+import { PublicEssayList } from "@/components/public-essay-list";
+import { routes } from "@/config/routes";
+import { listPublicEssays, publicReadSignal } from "@/lib/essays";
 
 import {
   formatMeetingDate,
@@ -24,6 +29,7 @@ export const dynamic = "force-dynamic";
 interface PublicMeetingRecord {
   junto: PublicJunto;
   meeting: PublicMeeting;
+  essays: Awaited<ReturnType<typeof listPublicEssays>>;
 }
 
 // The canonical public meeting page (docs/content/meetings.md):
@@ -41,17 +47,22 @@ const loadRecord = cache(
       return null;
     }
     try {
+      const signal = publicReadSignal();
       const supabase = createSupabaseAnonClient();
-      const junto = await getPublicJunto(supabase, juntoSlug);
+      const junto = await getPublicJunto(supabase, juntoSlug, signal);
       if (!junto) {
         return null;
       }
-      const meeting = await getPublicMeetingByDate(
-        supabase,
-        juntoSlug,
-        meetingDate,
-      );
-      return meeting ? { junto, meeting } : null;
+      const [meeting, essays] = await Promise.all([
+        getPublicMeetingByDate(supabase, juntoSlug, meetingDate, signal),
+        listPublicEssays(supabase, {
+          juntoSlug,
+          meetingDate,
+          limit: 100,
+          signal,
+        }),
+      ]);
+      return meeting ? { junto, meeting, essays } : null;
     } catch {
       return null;
     }
@@ -88,7 +99,7 @@ export default async function PublicMeetingPage({ params }: RouteParams) {
   if (!record) {
     notFound();
   }
-  const { junto, meeting } = record;
+  const { junto, meeting, essays } = record;
   const name = meetingDisplayName(meeting);
   const statusNote = PUBLIC_STATUS_NOTES[meeting.status];
 
@@ -113,11 +124,46 @@ export default async function PublicMeetingPage({ params }: RouteParams) {
       ) : null}
       <hr className={styles.rule} />
       <section aria-labelledby="meeting-essays">
-        <h2 id="meeting-essays">Essays from this meeting</h2>
-        <p className={styles.empty}>
-          Essays their authors publish from this meeting will appear here.
-        </p>
+        <div className={styles.sectionHeadingRow}>
+          <h2 id="meeting-essays">Essays from this meeting</h2>
+          {essays.length > 0 ? (
+            <a
+              className={styles.contextLink}
+              href={routes.essayArchive({ meetingDate: meeting.meetingDate })}
+            >
+              Browse in the archive
+            </a>
+          ) : null}
+        </div>
+        {essays.length > 0 ? (
+          <div className={styles.sectionBody}>
+            <PublicEssayList essays={essays} />
+          </div>
+        ) : (
+          <p className={styles.empty}>
+            Essays their authors publish from this meeting will appear here.
+          </p>
+        )}
       </section>
+      {essays.length > 0 ? (
+        <section
+          className={styles.trailingSection}
+          aria-labelledby="meeting-authors"
+        >
+          <h2 id="meeting-authors">Authors</h2>
+          <ul className={styles.inlineAuthorList}>
+            {[
+              ...new Map(
+                essays.map((essay) => [essay.authorSlug, essay.authorName]),
+              ),
+            ].map(([slug, name]) => (
+              <li key={slug}>
+                <Link href={routes.author(slug)}>{name}</Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </article>
   );
 }

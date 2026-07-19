@@ -137,6 +137,42 @@ test.describe("public publication shell", () => {
     }
   });
 
+  test("public essay and author misses stay generic and bounded with the archive unavailable", async ({
+    page,
+  }) => {
+    for (const path of [
+      "/essays/no-such-public-essay",
+      "/essays/Not%20A%20Slug",
+      "/authors/no-such-public-author",
+      "/authors/Not%20A%20Slug",
+    ]) {
+      const started = Date.now();
+      await page.goto(path);
+      expect(
+        Date.now() - started,
+        `${path} must render within the read cap`,
+      ).toBeLessThan(4_500);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Page not found" }),
+      ).toBeVisible();
+      await expect(page).toHaveTitle(/^(Essay|Author) · Junto$/);
+    }
+  });
+
+  test("invalid archive filters and sitemap fail closed without disclosure", async ({
+    page,
+  }) => {
+    await page.goto("/essays?author=Not%20A%20Slug");
+    await expect(
+      page.getByText("The public essay record is quiet for now."),
+    ).toBeVisible();
+    const source = await page.content();
+    expect(source).not.toMatch(/profile|members_only|service_role/);
+    const response = await page.request.get("/sitemap.xml");
+    expect(response.ok()).toBe(true);
+    expect(await response.text()).not.toMatch(/<url>/);
+  });
+
   test("honors prefers-reduced-motion", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");

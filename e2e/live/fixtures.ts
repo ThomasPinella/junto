@@ -83,6 +83,8 @@ export const ESSAY_COMEMBER_EMAIL = "c10-t05-comember@example.com";
 // T05: a real NON-AUTHOR same-Junto admin, proving the publication
 // transition's explicit-confirmation boundary is not weakened for admins.
 export const ESSAY_ADMIN_EMAIL = "c11-t05-admin@example.com";
+export const PUBLIC_AUTHOR_A_EMAIL = "c17-public-maya@example.com";
+export const PUBLIC_AUTHOR_B_EMAIL = "c17-public-daniel@example.com";
 
 const FIXTURE_JUNTOS = [
   JUNTO_A,
@@ -99,6 +101,8 @@ const FIXTURE_EMAILS = [
   ESSAY_AUTHOR_EMAIL,
   ESSAY_COMEMBER_EMAIL,
   ESSAY_ADMIN_EMAIL,
+  PUBLIC_AUTHOR_A_EMAIL,
+  PUBLIC_AUTHOR_B_EMAIL,
 ] as const;
 
 function isoDateFromToday(offsetDays: number): string {
@@ -607,6 +611,18 @@ async function seed(): Promise<void> {
       {
         junto_id: JUNTO_E.id,
         email_normalized: ESSAY_AUTHOR_EMAIL,
+        role: "member",
+        status: "pending",
+      },
+      {
+        junto_id: JUNTO_P.id,
+        email_normalized: PUBLIC_AUTHOR_A_EMAIL,
+        role: "member",
+        status: "pending",
+      },
+      {
+        junto_id: JUNTO_P.id,
+        email_normalized: PUBLIC_AUTHOR_B_EMAIL,
         role: "member",
         status: "pending",
       },

@@ -22,6 +22,16 @@ describe("routes", () => {
     );
   });
 
+  it("places author pages under /authors/[authorSlug] and encodes filters", () => {
+    expect(routes.author("maya/chen")).toBe("/authors/maya%2Fchen");
+    expect(routes.essayArchive({ authorSlug: "maya chen" })).toBe(
+      "/essays?author=maya+chen",
+    );
+    expect(routes.essayArchive({ meetingDate: "2026/07/12" })).toBe(
+      "/essays?meeting=2026%2F07%2F12",
+    );
+  });
+
   it("uses the documented public meeting URL shape", () => {
     // docs/content/meetings.md: /juntos/san-diego/meetings/2026-06-22
     expect(routes.publicMeeting("san-diego", "2026-06-22")).toBe(

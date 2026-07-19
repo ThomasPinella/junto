@@ -98,3 +98,175 @@
   background-color: var(--color-surface);
   border-left: 2px solid var(--color-rule);
 }
+
+.filterState {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  max-width: 58rem;
+  margin-top: var(--space-xl);
+  padding-block: var(--space-md);
+  border-block: 1px solid var(--color-rule);
+  font-family: var(--font-sans);
+}
+
+.filterState a,
+.contextLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--color-accent);
+}
+
+.authorList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--space-2xl);
+  max-width: 58rem;
+  padding: 0;
+  list-style: none;
+}
+
+.authorList li {
+  padding-block: var(--space-lg);
+  border-top: 1px solid var(--color-rule);
+}
+
+.authorName {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 1.75rem;
+  text-decoration: none;
+}
+
+.authorList p {
+  color: var(--color-muted);
+}
+
+.sectionBody {
+  margin-top: var(--space-lg);
+}
+
+.sectionHeadingRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.trailingSection {
+  max-width: 58rem;
+  margin-top: var(--space-3xl);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--color-ink);
+}
+
+.linkList,
+.inlineAuthorList {
+  margin-top: var(--space-lg);
+  padding: 0;
+  list-style: none;
+}
+
+.linkList li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-lg);
+  align-items: center;
+  padding-block: var(--space-md);
+  border-top: 1px solid var(--color-rule);
+}
+
+.linkList a,
+.inlineAuthorList a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.linkList time {
+  font-family: var(--font-sans);
+  font-size: var(--label-size);
+  color: var(--color-muted);
+}
+
+.inlineAuthorList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-xl);
+}
+
+.essayPage {
+  display: grid;
+  justify-items: center;
+}
+
+.essayHeader,
+.essayBody,
+.essayPage .trailingSection {
+  width: min(100%, var(--measure-reading));
+}
+
+.essayHeader {
+  padding-bottom: var(--space-2xl);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.meetingContext {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: var(--space-lg);
+  font-family: var(--font-sans);
+  font-size: var(--label-size);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.essaySubtitle {
+  max-width: 52ch;
+  margin-top: var(--space-lg);
+  font-size: var(--body-lg-size);
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.essayByline {
+  margin-top: var(--space-xl);
+  font-size: 1.125rem;
+}
+
+.essayByline a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.essayMeta {
+  font-family: var(--font-sans);
+  font-size: var(--label-size);
+  color: var(--color-muted);
+}
+
+.essayBody {
+  margin-top: var(--space-2xl);
+  font-size: clamp(1.1875rem, 1.15rem + 0.2vw, 1.3125rem);
+  line-height: 1.7;
+}
+
+@media (max-width: 700px) {
+  .authorList {
+    grid-template-columns: 1fr;
+  }
+
+  .linkList li {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

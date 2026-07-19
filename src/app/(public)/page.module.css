@@ -1,4 +1,10 @@
-.label {
+.frontPage {
+  display: grid;
+  gap: var(--space-3xl);
+}
+
+.label,
+.kicker {
   font-family: var(--font-sans);
   font-size: var(--label-size);
   font-weight: 600;
@@ -9,7 +15,7 @@
 }
 
 .display {
-  max-width: 24ch;
+  max-width: 23ch;
   margin-top: var(--space-lg);
   font-size: clamp(2.5rem, 1.75rem + 4vw, var(--display-size));
   font-weight: 500;
@@ -19,17 +25,113 @@
 
 .lede {
   max-width: var(--measure-reading);
-  margin-top: var(--space-xl);
+  margin-top: var(--space-lg);
   font-size: var(--body-lg-size);
   line-height: 1.7;
 }
 
-.rule {
-  margin-block: var(--space-2xl);
+.feature {
+  display: grid;
+  gap: var(--space-lg);
+  padding-block: var(--space-xl) var(--space-2xl);
+  border-block: 1px solid var(--color-rule);
 }
 
-.note {
-  max-width: var(--measure-reading);
+.feature .display,
+.feature .lede {
+  margin-top: 0;
+}
+
+.featureLink,
+.sectionHeading > a,
+.practice > a {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 44px;
+  font-family: var(--font-sans);
+  color: var(--color-accent);
+}
+
+.section {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+.lowerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2xl);
+}
+
+.lowerGrid section {
+  border-top: 1px solid var(--color-ink);
+  padding-top: var(--space-lg);
+}
+
+.simpleList {
   margin-top: var(--space-lg);
+  padding: 0;
+  list-style: none;
+}
+
+.simpleList li {
+  display: grid;
+  gap: var(--space-xs);
+  padding-block: var(--space-md);
+  border-top: 1px solid var(--color-rule);
+}
+
+.simpleList a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 1.25rem;
+}
+
+.simpleList time,
+.simpleList span {
+  font-family: var(--font-sans);
+  font-size: var(--label-size);
   color: var(--color-muted);
+}
+
+.practice {
+  display: grid;
+  gap: var(--space-lg);
+  max-width: var(--measure-reading);
+  padding: var(--space-xl);
+  background: var(--color-surface);
+  border-left: 2px solid var(--color-accent);
+}
+
+.practice p:not(.label) {
+  font-size: var(--body-lg-size);
+  line-height: 1.7;
+}
+
+@media (max-width: 700px) {
+  .frontPage {
+    gap: var(--space-2xl);
+  }
+
+  .lowerGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionHeading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .practice {
+    padding: var(--space-lg);
+  }
 }

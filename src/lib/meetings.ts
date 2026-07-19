@@ -201,20 +201,21 @@ const PUBLIC_MEETING_COLUMNS =
 // plus one quick retry) while normal reads stay unaffected.
 const PUBLIC_READ_TIMEOUT_MS = 2_500;
 
-function publicReadSignal(): AbortSignal {
+export function publicMeetingReadSignal(): AbortSignal {
   return AbortSignal.timeout(PUBLIC_READ_TIMEOUT_MS);
 }
 
 export async function listPublicMeetings(
   supabase: SupabaseServerClient,
   juntoSlug: string,
+  signal: AbortSignal = publicMeetingReadSignal(),
 ): Promise<PublicMeeting[]> {
   const { data, error } = await supabase
     .from("public_meetings")
     .select(PUBLIC_MEETING_COLUMNS)
     .eq("junto_slug", juntoSlug)
     .order("meeting_date", { ascending: false })
-    .abortSignal(publicReadSignal());
+    .abortSignal(signal);
   if (error) {
     throw new Error(`Public meeting listing failed (${error.code ?? "?"})`);
   }
@@ -228,13 +229,14 @@ export async function getPublicMeetingByDate(
   supabase: SupabaseServerClient,
   juntoSlug: string,
   meetingDate: string,
+  signal: AbortSignal = publicMeetingReadSignal(),
 ): Promise<PublicMeeting | null> {
   const { data, error } = await supabase
     .from("public_meetings")
     .select(PUBLIC_MEETING_COLUMNS)
     .eq("junto_slug", juntoSlug)
     .eq("meeting_date", meetingDate)
-    .abortSignal(publicReadSignal())
+    .abortSignal(signal)
     .maybeSingle();
   if (error) {
     throw new Error(`Public meeting lookup failed (${error.code ?? "?"})`);
@@ -260,6 +262,7 @@ export interface PublicJunto {
 export async function getPublicJunto(
   supabase: SupabaseServerClient,
   juntoSlug: string,
+  signal: AbortSignal = publicMeetingReadSignal(),
 ): Promise<PublicJunto | null> {
   const { data, error } = await supabase
     .from("juntos")
@@ -267,7 +270,7 @@ export async function getPublicJunto(
     .eq("slug", juntoSlug)
     .eq("status", "active")
     .eq("archive_visibility", "public")
-    .abortSignal(publicReadSignal())
+    .abortSignal(signal)
     .maybeSingle();
   if (error) {
     throw new Error(`Public junto lookup failed (${error.code ?? "?"})`);

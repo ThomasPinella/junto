@@ -52,4 +52,17 @@ export const routes = {
   essay(essaySlug: string): `/essays/${string}` {
     return `/essays/${encodeURIComponent(essaySlug)}`;
   },
+  author(authorSlug: string): `/authors/${string}` {
+    return `/authors/${encodeURIComponent(authorSlug)}`;
+  },
+  essayArchive(filters: {
+    authorSlug?: string;
+    meetingDate?: string;
+  }): `/essays${string}` {
+    const query = new URLSearchParams();
+    if (filters.authorSlug) query.set("author", filters.authorSlug);
+    if (filters.meetingDate) query.set("meeting", filters.meetingDate);
+    const suffix = query.toString();
+    return suffix ? `/essays?${suffix}` : "/essays";
+  },
 } as const;

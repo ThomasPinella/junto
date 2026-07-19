@@ -28,6 +28,10 @@ import {
   type PublicEssay,
 } from "@/lib/essay-domain";
 import type { SupabaseServerClient } from "@/lib/supabase/server";
+import {
+  authorSlugSchema,
+  type ArchiveFilters,
+} from "@/lib/public-archive-domain";
 
 const ESSAY_COLUMNS =
   "id, author_id, meeting_id, title, slug, subtitle, body_markdown, " +
@@ -284,20 +288,52 @@ const PUBLIC_ESSAY_COLUMNS =
 // bounded time — not ride out the Supabase client's full multi-second retry
 // backoff on every render. The signal caps each public read (first attempt
 // plus one quick retry) while private reads stay unaffected.
-const PUBLIC_READ_TIMEOUT_MS = 2_500;
+export const PUBLIC_READ_TIMEOUT_MS = 2_500;
 
-function publicReadSignal(): AbortSignal {
+export function publicReadSignal(): AbortSignal {
   return AbortSignal.timeout(PUBLIC_READ_TIMEOUT_MS);
 }
 
+export interface PublicEssayQuery extends ArchiveFilters {
+  juntoSlug: string;
+  limit?: number;
+  signal?: AbortSignal;
+}
+
+const publicEssayQuerySchema = z.strictObject({
+  juntoSlug: essaySlugSchema,
+  authorSlug: authorSlugSchema.optional(),
+  meetingDate: z.string().date().optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+});
+
 export async function listPublicEssays(
   supabase: SupabaseServerClient,
+  options: PublicEssayQuery,
 ): Promise<PublicEssay[]> {
-  const { data, error } = await supabase
+  const parsed = publicEssayQuerySchema.safeParse({
+    juntoSlug: options.juntoSlug,
+    authorSlug: options.authorSlug,
+    meetingDate: options.meetingDate,
+    limit: options.limit,
+  });
+  if (!parsed.success) return [];
+  let query = supabase
     .from("public_essays")
     .select(PUBLIC_ESSAY_COLUMNS)
+    .eq("junto_slug", parsed.data.juntoSlug)
     .order("published_at", { ascending: false })
-    .abortSignal(publicReadSignal());
+    .abortSignal(options.signal ?? publicReadSignal());
+  if (parsed.data.authorSlug) {
+    query = query.eq("author_slug", parsed.data.authorSlug);
+  }
+  if (parsed.data.meetingDate) {
+    query = query.eq("meeting_date", parsed.data.meetingDate);
+  }
+  if (parsed.data.limit) {
+    query = query.limit(parsed.data.limit);
+  }
+  const { data, error } = await query;
   if (error) {
     throw new Error(`Public essay listing failed (${error.code ?? "?"})`);
   }
@@ -310,6 +346,8 @@ export async function listPublicEssays(
 export async function getPublicEssayBySlug(
   supabase: SupabaseServerClient,
   essaySlug: string,
+  juntoSlug?: string,
+  signal: AbortSignal = publicReadSignal(),
 ): Promise<PublicEssay | null> {
   // URL input: a malformed slug can never match, so it resolves to the same
   // uniform miss as an absent, private, unpublished, or ineligible essay —
@@ -317,12 +355,14 @@ export async function getPublicEssayBySlug(
   if (!essaySlugSchema.safeParse(essaySlug).success) {
     return null;
   }
-  const { data, error } = await supabase
+  if (juntoSlug && !essaySlugSchema.safeParse(juntoSlug).success) return null;
+  let query = supabase
     .from("public_essays")
     .select(PUBLIC_ESSAY_COLUMNS)
     .eq("slug", essaySlug)
-    .abortSignal(publicReadSignal())
-    .maybeSingle();
+    .abortSignal(signal);
+  if (juntoSlug) query = query.eq("junto_slug", juntoSlug);
+  const { data, error } = await query.maybeSingle();
   if (error) {
     throw new Error(`Public essay lookup failed (${error.code ?? "?"})`);
   }

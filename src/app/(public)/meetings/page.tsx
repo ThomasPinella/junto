@@ -14,6 +14,7 @@ import {
   listPublicMeetings,
   type PublicJunto,
 } from "@/lib/meetings";
+import { publicReadSignal } from "@/lib/essays";
 import { createSupabaseAnonClient } from "@/lib/supabase/server";
 
 import styles from "../publication.module.css";
@@ -38,12 +39,16 @@ async function loadPublicArchive(
   juntoSlug: string,
 ): Promise<PublicArchive | null> {
   try {
+    const signal = publicReadSignal();
     const supabase = createSupabaseAnonClient();
-    const junto = await getPublicJunto(supabase, juntoSlug);
+    const junto = await getPublicJunto(supabase, juntoSlug, signal);
     if (!junto) {
       return null;
     }
-    return { junto, meetings: await listPublicMeetings(supabase, juntoSlug) };
+    return {
+      junto,
+      meetings: await listPublicMeetings(supabase, juntoSlug, signal),
+    };
   } catch {
     return null;
   }
