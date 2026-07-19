@@ -133,6 +133,46 @@
       "base": "dce552906864f338a660ec023868e08369bccb86",
       "result": "2608ba655a20a9b648dfcebd1ff96cb3d27311c6",
       "process_handle": "proc_513d2c43952c"
+    },
+    "C07": {
+      "task": "T03",
+      "role": "builder",
+      "state": "integrated",
+      "branch": "dev/core-product-t03",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t03",
+      "base": "b00f2a40d5627251dbc085d430f6b0f2717ed89f",
+      "result": "80c6881c7b5e00b610f515e3ee273c8d28d38de7",
+      "process_handle": "proc_3610330930a2"
+    },
+    "R08": {
+      "task": "T03",
+      "role": "reconciler",
+      "state": "completed_needs_fixes",
+      "branch": "dev/core-product-t03",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t03",
+      "base": "b00f2a40d5627251dbc085d430f6b0f2717ed89f",
+      "result": "80c6881c7b5e00b610f515e3ee273c8d28d38de7",
+      "process_handle": "proc_01e235fdc98a"
+    },
+    "C08": {
+      "task": "T03-fix-live-fixture-schemas",
+      "role": "builder",
+      "state": "integrated",
+      "branch": "dev/core-product-t03",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t03",
+      "base": "80c6881c7b5e00b610f515e3ee273c8d28d38de7",
+      "result": "a26c85ff5c6c766498ddebf2b05affff2c329f95",
+      "process_handle": "proc_1c1ac5fffe14"
+    },
+    "R09": {
+      "task": "T03-fix-live-fixture-schemas",
+      "role": "reconciler",
+      "state": "completed_clean_with_notes",
+      "branch": "dev/core-product-t03",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t03",
+      "base": "80c6881c7b5e00b610f515e3ee273c8d28d38de7",
+      "result": "a26c85ff5c6c766498ddebf2b05affff2c329f95",
+      "process_handle": "proc_82fefb836f41"
     }
   }
 }

@@ -72,7 +72,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T02
 - Outcome: An invited person can authenticate, claim the matching invitation, enter the correct Junto portal, switch between active memberships, and see role-appropriate navigation; an uninvited or deactivated person receives a safe rejection and no private data.
 - Proof: Integration and Playwright coverage demonstrate invited activation, rejected registration, multi-Junto switching, Junto-scoped admin navigation, session handling, and immediate access loss after membership deactivation.
-- Status: ready; T02 is integrated and R07 explicitly unblocked this assignment.
+- Status: complete; cumulative T03 integrated at `a26c85ff5c6c766498ddebf2b05affff2c329f95` after R09 returned clean with non-blocking notes. Real invitation-gated mailbox authentication, verified-session claiming, live multi-Junto authorization/deactivation, scoped admin navigation, safe redirects/sessions, private rendering, and fail-closed live journey fixtures are verified.
 
 ## T04 — Implement meetings as a complete vertical slice
 
@@ -80,7 +80,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T03
 - Outcome: Versioned schema and policies support upcoming, completed, cancelled, and archived meetings; Junto admins can create, edit, and archive meetings; members can view authorized meeting details; visitors can view safe public meeting pages without private essay counts or sensitive location data.
 - Proof: Database and integration tests cover admin/member/visitor behavior, meeting-to-Junto integrity, archive semantics, denied cross-Junto writes and reads, and public-page non-disclosure; Playwright exercises admin creation/edit/archive and public/member meeting views.
-- Status: blocked
+- Status: ready; T03 is integrated and R09 explicitly unblocked this assignment.
 
 ## T05 — Implement secure essay storage, rendering, and publication rules
 
