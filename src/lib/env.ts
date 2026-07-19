@@ -34,10 +34,14 @@ const siteEnvSchema = z.object({
   JUNTO_INITIAL_JUNTO_SLUG: juntoSlug,
 });
 
+// The service-role key is deliberately NOT part of the application
+// environment: T02 Row Level Security plus the authenticated user cookie is
+// the application's entire authorization boundary, and no route, component,
+// or server action may ever hold service-role credentials. Privileged
+// fixtures live only in the loopback-guarded test harnesses.
 const supabaseEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url({ error: "must be an absolute URL" }),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, "must not be empty"),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "must not be empty"),
 });
 
 type EnvSource = Record<string, string | undefined>;

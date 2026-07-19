@@ -8,6 +8,10 @@ const baseURL = `http://127.0.0.1:${PORT}`;
 // depend on leftover local state.
 export default defineConfig({
   testDir: "./e2e",
+  // Live Supabase-backed journeys run only via the explicit integration
+  // command `pnpm test:e2e:live` (playwright.live.config.ts); the baseline
+  // suite must never silently depend on a running stack.
+  testIgnore: ["live/**"],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

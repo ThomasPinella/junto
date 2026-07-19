@@ -24,20 +24,31 @@ with the offending variable named; see `.env.example` for the full list.
 
 ## Scripts
 
-| Command             | Purpose                                            |
-| ------------------- | -------------------------------------------------- |
-| `pnpm format:check` | Prettier check (`pnpm format` writes)              |
-| `pnpm lint`         | ESLint                                             |
-| `pnpm typecheck`    | Strict TypeScript, no emit                         |
-| `pnpm test`         | Unit/integration tests (Vitest)                    |
-| `pnpm test:db`      | Database tests: pgTAP + live local Auth regression |
-| `pnpm test:e2e`     | Playwright E2E (builds and serves the app itself)  |
-| `pnpm build`        | Production build                                   |
+| Command              | Purpose                                            |
+| -------------------- | -------------------------------------------------- |
+| `pnpm format:check`  | Prettier check (`pnpm format` writes)              |
+| `pnpm lint`          | ESLint                                             |
+| `pnpm typecheck`     | Strict TypeScript, no emit                         |
+| `pnpm test`          | Unit/integration tests (Vitest)                    |
+| `pnpm test:db`       | Database tests: pgTAP + live local Auth regression |
+| `pnpm test:e2e`      | Playwright E2E (builds and serves the app itself)  |
+| `pnpm test:e2e:live` | Live auth/portal journeys (needs `pnpm db:start`)  |
+| `pnpm build`         | Production build                                   |
 
 `test:db` and `db:start` need Docker for the local Supabase stack. This host's
 Docker daemon publishes unspecified ports to `127.0.0.1` by default, so the
 development database and dashboards are not exposed on the VPS's public
 interfaces. Run `pnpm db:stop` when finished.
+
+`pnpm test:e2e` is stack-free: it proves the public shells and the
+unauthenticated portal denials only. The authenticated member journeys —
+invitation-gated magic-link sign-in through the real GoTrue/Mailpit email
+flow, invitation claiming, multi-Junto switching, Junto-scoped admin
+navigation, live deactivation, and sign-out — run through the explicit
+integration command `pnpm test:e2e:live`, which requires the local Supabase
+stack (`pnpm db:start`) and checks for it up front. Its privileged fixture
+setup/teardown obeys the same loopback-only, fail-closed rules as the T02
+Auth harness below.
 
 `pnpm test:db` runs three stages: `test:db:pgtap` (pgTAP via
 `supabase test db`), `test:db:safety` (deterministic self-checks of the live
@@ -53,11 +64,18 @@ forwarded off the loopback stack, with no override.
 
 ## Layout
 
-- `src/app` — App Router routes: public publication shells and `/portal`
+- `src/app` — App Router routes: public publication shells, the private
+  member portal (`/portal`, `/portal/[juntoSlug]`), and the Supabase Auth
+  callback (`/auth/callback`)
+- `src/proxy.ts` — refreshes Supabase Auth cookies for private routes
+  (never an authorization decision; protected server code re-checks the
+  user and live active membership through RLS on every request)
 - `src/components` — shared presentational components
 - `src/config` — routing and site configuration seams
-- `src/lib` — server utilities (environment validation)
-- `tests/unit`, `e2e` — Vitest and Playwright tests
+- `src/lib` — server utilities (environment validation, Supabase server
+  client, membership/profile reads, portal authorization)
+- `tests/unit`, `e2e`, `e2e/live` — Vitest, baseline Playwright, and live
+  Supabase-backed Playwright journeys
 - `supabase/tests` — pgTAP database tests plus the Node-based live Auth
   regression harness and its safety self-checks
 

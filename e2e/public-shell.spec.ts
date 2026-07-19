@@ -1,11 +1,13 @@
 import { expect, test } from "@playwright/test";
 
+// The Member Portal entry is private: unauthenticated visits land on the
+// sign-in page (T03).
 const publicShells = [
-  { label: "Archive", path: "/essays" },
-  { label: "Meetings", path: "/meetings" },
-  { label: "Authors", path: "/authors" },
-  { label: "About", path: "/about" },
-  { label: "Member Portal", path: "/portal" },
+  { label: "Archive", path: "/essays", finalUrl: "/essays" },
+  { label: "Meetings", path: "/meetings", finalUrl: "/meetings" },
+  { label: "Authors", path: "/authors", finalUrl: "/authors" },
+  { label: "About", path: "/about", finalUrl: "/about" },
+  { label: "Member Portal", path: "/portal", finalUrl: "/portal/sign-in" },
 ] as const;
 
 const allShellPaths = ["/", ...publicShells.map((shell) => shell.path)];
@@ -38,7 +40,7 @@ test.describe("public publication shell", () => {
         .getByRole("navigation", { name: "Publication" })
         .getByRole("link", { name: shell.label })
         .click();
-      await expect(page).toHaveURL(shell.path);
+      await expect(page).toHaveURL(shell.finalUrl);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     });
   }

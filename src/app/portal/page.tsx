@@ -1,34 +1,72 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { routes } from "@/config/routes";
+import { requirePortalUser } from "@/lib/portal-access";
 
-import styles from "./page.module.css";
+import { PortalFrame } from "./frame";
+import { SignOutButton } from "./sign-out-button";
 
-export const metadata: Metadata = {
-  title: "Member portal",
-};
+import styles from "./content.module.css";
 
-export default function PortalHomePage() {
+// The private entry/selection route. Access is derived from the
+// authenticated user's live active memberships through RLS: one membership
+// enters its portal directly, several offer a choice, none is a safe dead
+// end with nothing private to see.
+export default async function PortalEntryPage() {
+  const { memberships } = await requirePortalUser();
+
+  const only = memberships.length === 1 ? memberships[0] : undefined;
+  if (only) {
+    redirect(routes.portalJunto(only.juntoSlug));
+  }
+
+  if (memberships.length === 0) {
+    return (
+      <PortalFrame aside={<SignOutButton />}>
+        <article>
+          <p className={styles.label}>Junto members only</p>
+          <h1 className={styles.title}>No active memberships</h1>
+          <div className={styles.body}>
+            <p>
+              You are signed in, but this account has no active Junto membership
+              right now.
+            </p>
+            <p>
+              If your chapter invited you recently, ask its admin to confirm the
+              invitation matches this email address. In the meantime,{" "}
+              <Link href={routes.home}>the public archive remains open</Link>.
+            </p>
+          </div>
+        </article>
+      </PortalFrame>
+    );
+  }
+
   return (
-    <article>
-      <p className={styles.label}>Junto members only</p>
-      <h1 className={styles.title}>The writing room</h1>
-      <div className={styles.body}>
-        <p>
-          The member portal is the chapter&rsquo;s private side of Junto: the
-          next meeting, essay deadlines, drafts in progress, and discussion
-          among members.
-        </p>
-        <p>
-          Member sign-in is not yet open. Junto membership is by invitation from
-          a chapter, and nothing private is stored or shown here yet.
-        </p>
-        <p>
-          In the meantime,{" "}
-          <Link href={routes.home}>read the public archive</Link>.
-        </p>
-      </div>
-    </article>
+    <PortalFrame aside={<SignOutButton />}>
+      <article>
+        <p className={styles.label}>Junto members only</p>
+        <h1 className={styles.title}>Your Juntos</h1>
+        <div className={styles.body}>
+          <p>Choose the chapter you want to work in.</p>
+        </div>
+        <ul className={styles.entryList}>
+          {memberships.map((membership) => (
+            <li className={styles.entryRow} key={membership.membershipId}>
+              <Link
+                className={styles.entryLink}
+                href={routes.portalJunto(membership.juntoSlug)}
+              >
+                {membership.juntoName}
+              </Link>
+              <span className={styles.entryMeta}>
+                {membership.role === "admin" ? "Admin" : "Member"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </article>
+    </PortalFrame>
   );
 }

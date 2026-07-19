@@ -11,6 +11,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
+  justify-content: space-between;
   gap: var(--space-sm) var(--space-lg);
   padding-block: var(--space-lg) var(--space-md);
   border-bottom: 1px solid var(--color-rule);
@@ -33,6 +34,7 @@
 }
 
 .portalLabel {
+  margin-top: var(--space-xs);
   font-family: var(--font-sans);
   font-size: var(--label-size);
   font-weight: 600;
@@ -42,34 +44,25 @@
   color: var(--color-muted);
 }
 
-.nav {
-  margin-left: auto;
-}
-
-.navList {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 var(--space-lg);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.navLink {
-  display: inline-flex;
-  align-items: center;
+.signOut {
   min-height: 44px;
+  padding: 10px var(--space-md);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-control);
+  background-color: var(--color-surface);
+  color: var(--color-ink);
   font-family: var(--font-sans);
   font-size: 0.9375rem;
   line-height: 1.4;
-  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease;
 }
 
-.navLink:hover {
+.signOut:hover {
+  border-color: var(--color-accent);
   color: var(--color-accent-hover);
-  text-decoration: underline;
-  text-underline-offset: 0.3em;
 }
 
 .main {

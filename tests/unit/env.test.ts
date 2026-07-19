@@ -10,7 +10,6 @@ const validSite = {
 const validSupabase = {
   NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
   NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder-anon-key",
-  SUPABASE_SERVICE_ROLE_KEY: "placeholder-service-role-key",
 };
 
 describe("loadSiteEnv", () => {
@@ -64,7 +63,17 @@ describe("loadSupabaseEnv", () => {
     }
     expect(message).toContain("NEXT_PUBLIC_SUPABASE_URL");
     expect(message).toContain("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-    expect(message).toContain("SUPABASE_SERVICE_ROLE_KEY");
+  });
+
+  it("never requires — and never accepts responsibility for — the service-role key", () => {
+    // The application environment must not depend on privileged credentials;
+    // RLS with the anon key and the user cookie is the authorization
+    // boundary (AGENTS.md, "Architecture and security").
+    const parsed = loadSupabaseEnv({
+      ...validSupabase,
+      SUPABASE_SERVICE_ROLE_KEY: "should-never-be-read-by-the-app",
+    });
+    expect(parsed).not.toHaveProperty("SUPABASE_SERVICE_ROLE_KEY");
   });
 
   it("rejects a Supabase URL that is not a URL", () => {
