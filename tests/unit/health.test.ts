@@ -36,4 +36,18 @@ describe("GET /health", () => {
       expect(await response.json()).toEqual({ status: "misconfigured" });
     },
   );
+
+  it.each([
+    ["NEXT_PUBLIC_SITE_URL", "ftp://junto.example"],
+    ["NEXT_PUBLIC_SUPABASE_URL", "file:///tmp/supabase"],
+  ])("returns fixed 503 readiness for non-HTTP %s", async (name, value) => {
+    for (const [key, validValue] of Object.entries(valid))
+      vi.stubEnv(key, validValue);
+    vi.stubEnv(name, value);
+
+    const response = GET();
+    expect(response.status).toBe(503);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toEqual({ status: "misconfigured" });
+  });
 });

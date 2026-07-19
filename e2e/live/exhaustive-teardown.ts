@@ -4,6 +4,21 @@ export interface LiveTeardownPhases {
   verifyFixturesAbsent: () => Promise<void>;
 }
 
+interface ClosableBrowserContext {
+  close: () => Promise<void>;
+}
+
+export async function closeBrowserContextsExhaustively(
+  contexts: readonly ClosableBrowserContext[],
+): Promise<void> {
+  const results = await Promise.allSettled(
+    contexts.map((context) => context.close()),
+  );
+  if (results.some((result) => result.status === "rejected")) {
+    throw new Error("Browser context close failed");
+  }
+}
+
 // Teardown is closed-world evidence, not best effort. Every independent
 // phase runs even after an earlier failure, while fixed diagnostics ensure a
 // thrown browser or transport error cannot disclose cookies or credentials.

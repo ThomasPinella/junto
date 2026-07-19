@@ -27,7 +27,10 @@ export const juntoSlugSchema = z
   );
 
 const siteEnvSchema = z.object({
-  NEXT_PUBLIC_SITE_URL: z.url({ error: "must be an absolute URL" }),
+  NEXT_PUBLIC_SITE_URL: z.url({
+    protocol: /^https?$/,
+    error: "must be an HTTP(S) URL",
+  }),
   // Route seam for docs/implementation: `/` serves the explicitly configured
   // initial chapter without hard-coding a single-Junto data assumption
   // (.dev/runs/core-product/implementation.md, "Decisions and boundaries").
@@ -40,7 +43,10 @@ const siteEnvSchema = z.object({
 // or server action may ever hold service-role credentials. Privileged
 // fixtures live only in the loopback-guarded test harnesses.
 const supabaseEnvSchema = z.object({
-  NEXT_PUBLIC_SUPABASE_URL: z.url({ error: "must be an absolute URL" }),
+  NEXT_PUBLIC_SUPABASE_URL: z.url({
+    protocol: /^https?$/,
+    error: "must be an HTTP(S) URL",
+  }),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, "must not be empty"),
 });
 

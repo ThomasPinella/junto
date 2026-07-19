@@ -29,9 +29,9 @@ The application requires exactly these four variables:
 - `NEXT_PUBLIC_SUPABASE_URL` — local or hosted Supabase project URL;
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — the project publishable/legacy anon key.
 
-The application neither requires nor accepts a Supabase service-role/secret
-key. That privileged key exists only inside loopback-guarded local fixture
-harnesses and must never be configured on Railway.
+The application neither reads nor requires a Supabase service-role/secret key.
+That privileged key exists only inside loopback-guarded local fixture harnesses;
+operators must not configure it on Railway.
 
 ## Scripts
 
@@ -156,12 +156,14 @@ git archive HEAD | tar -x -C "$candidate_dir"
 (
   cd "$candidate_dir"
   test ! -e .env.local
-  pnpm install --frozen-lockfile
+  env -i PATH="$PATH" CI=1 pnpm install --frozen-lockfile
+  env -i PATH="$PATH" CI=1 \
   NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3212 \
   JUNTO_INITIAL_JUNTO_SLUG=verification \
   NEXT_PUBLIC_SUPABASE_URL=https://placeholder.invalid \
   NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-publishable-value \
   pnpm build
+  env -i PATH="$PATH" CI=1 \
   PORT=3212 \
   NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3212 \
   JUNTO_INITIAL_JUNTO_SLUG=verification \

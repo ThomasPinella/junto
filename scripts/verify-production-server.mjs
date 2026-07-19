@@ -1,6 +1,8 @@
 import { spawn } from "node:child_process";
 import { connect } from "node:net";
 
+import { terminateProcessGroup } from "./process-group.mjs";
+
 const port = Number(process.env.PORT);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) {
   throw new Error("PORT must be an explicit unused non-privileged TCP port");
@@ -26,6 +28,10 @@ const child = spawn("pnpm", ["start"], {
   env: process.env,
   stdio: ["ignore", "pipe", "pipe"],
 });
+if (!child.pid) {
+  throw new Error("production server process group could not be determined");
+}
+const processGroupId = child.pid;
 let output = "";
 child.stdout.on("data", (chunk) => {
   output += String(chunk);
@@ -33,43 +39,6 @@ child.stdout.on("data", (chunk) => {
 child.stderr.on("data", (chunk) => {
   output += String(chunk);
 });
-
-function waitForExit(timeoutMs) {
-  if (child.exitCode !== null || child.signalCode !== null) return true;
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => {
-      child.off("exit", exited);
-      resolve(false);
-    }, timeoutMs);
-    const exited = () => {
-      clearTimeout(timer);
-      resolve(true);
-    };
-    child.once("exit", exited);
-  });
-}
-
-async function signalProcessGroup(signal) {
-  if (!child.pid) return;
-  try {
-    process.kill(-child.pid, signal);
-  } catch (error) {
-    if (error?.code !== "ESRCH") throw error;
-  }
-}
-
-async function stopProcessTree() {
-  if (child.exitCode !== null || child.signalCode !== null) return;
-  const gracefulExit = waitForExit(5_000);
-  await signalProcessGroup("SIGTERM");
-  if (await gracefulExit) return;
-
-  const forcedExit = waitForExit(5_000);
-  await signalProcessGroup("SIGKILL");
-  if (!(await forcedExit)) {
-    throw new Error("production server process group did not terminate");
-  }
-}
 
 try {
   const origin = `http://127.0.0.1:${port}`;
@@ -110,7 +79,7 @@ try {
     `${error instanceof Error ? error.message : error}\n${safeOutput}`,
   );
 } finally {
-  await stopProcessTree();
+  await terminateProcessGroup(processGroupId);
   if (await portAcceptsConnections()) {
     throw new Error(`production proof leaked a listener on PORT ${port}`);
   }

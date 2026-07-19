@@ -38,6 +38,15 @@ describe("loadSiteEnv", () => {
     ).toThrowError(/NEXT_PUBLIC_SITE_URL/);
   });
 
+  it.each(["ftp://junto.example", "file:///tmp/junto"])(
+    "rejects non-HTTP site URL %s",
+    (url) => {
+      expect(() =>
+        loadSiteEnv({ ...validSite, NEXT_PUBLIC_SITE_URL: url }),
+      ).toThrowError(/NEXT_PUBLIC_SITE_URL/);
+    },
+  );
+
   it("rejects an initial Junto slug that is not a lowercase URL slug", () => {
     expect(() =>
       loadSiteEnv({ ...validSite, JUNTO_INITIAL_JUNTO_SLUG: "Philadelphia!" }),
@@ -65,7 +74,7 @@ describe("loadSupabaseEnv", () => {
     expect(message).toContain("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   });
 
-  it("never requires — and never accepts responsibility for — the service-role key", () => {
+  it("never requires or reads the service-role key", () => {
     // The application environment must not depend on privileged credentials;
     // RLS with the anon key and the user cookie is the authorization
     // boundary (AGENTS.md, "Architecture and security").
@@ -81,4 +90,13 @@ describe("loadSupabaseEnv", () => {
       loadSupabaseEnv({ ...validSupabase, NEXT_PUBLIC_SUPABASE_URL: "nope" }),
     ).toThrowError(/NEXT_PUBLIC_SUPABASE_URL/);
   });
+
+  it.each(["ftp://project.supabase.test", "data:text/plain,supabase"])(
+    "rejects non-HTTP Supabase URL %s",
+    (url) => {
+      expect(() =>
+        loadSupabaseEnv({ ...validSupabase, NEXT_PUBLIC_SUPABASE_URL: url }),
+      ).toThrowError(/NEXT_PUBLIC_SUPABASE_URL/);
+    },
+  );
 });

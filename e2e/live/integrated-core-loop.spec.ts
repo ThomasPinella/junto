@@ -20,7 +20,10 @@ import {
   restAsUser,
   verifyFixturesAbsent,
 } from "./fixtures";
-import { runExhaustiveLiveTeardown } from "./exhaustive-teardown";
+import {
+  closeBrowserContextsExhaustively,
+  runExhaustiveLiveTeardown,
+} from "./exhaustive-teardown";
 
 test.describe.configure({ mode: "serial" });
 
@@ -128,10 +131,10 @@ test.beforeAll(async ({ browser }, testInfo) => {
 test.afterAll(async () => {
   await runExhaustiveLiveTeardown({
     closeBrowserContext: async () => {
-      await Promise.all(
-        [adminContext, memberContext, outsiderContext, anonymousContext]
-          .filter((context): context is BrowserContext => context !== null)
-          .map((context) => context.close()),
+      await closeBrowserContextsExhaustively(
+        [adminContext, memberContext, outsiderContext, anonymousContext].filter(
+          (context): context is BrowserContext => context !== null,
+        ),
       );
     },
     cleanupFixtures,
