@@ -18,16 +18,28 @@
 //   3. after completing the real emailed magic-link/OTP confirmation flow, the
 //      matching verified identity claims its membership successfully.
 //
-// Deterministic and local-only: it seeds and tears down its own fixtures and
-// depends only on the local stack (Auth + Postgres + Mailpit). No external
-// email delivery or credentials.
+// Safety properties (guarded by harness-safety.test.mjs):
+//   - The harness mutates fixtures with service-role privileges, so before
+//     the FIRST network request both target URLs must be explicit loopback
+//     hosts (localhost, 127.0.0.0/8, [::1]). Every non-loopback target is
+//     refused with no override; env-supplied remote URLs and keys can never
+//     cause even a health-check request.
+//   - Teardown runs from `finally`, checks every cleanup response, verifies
+//     the fixtures are actually gone, and a teardown failure exits nonzero
+//     even when all functional checks passed. A functional failure is still
+//     reported alongside a teardown failure.
+//   - Importing this module has no side effects; the run starts only when
+//     the file is executed directly.
+
+import { pathToFileURL } from "node:url";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? "http://127.0.0.1:54321";
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
 
 // Well-known local Supabase demo keys (derived from the default local JWT
 // secret). These are NOT secrets: they ship with the Supabase CLI and are
-// identical on every default local stack. Overridable via env for safety.
+// identical on every default local stack. Env-overridable keys are usable
+// only against the hard-loopback targets enforced below.
 const ANON_KEY =
   process.env.SUPABASE_ANON_KEY ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
@@ -43,6 +55,36 @@ const INVITED_MEMBER = "c03-invited-member@example.com";
 const UNINVITED = "c03-uninvited@example.com";
 const PASSWORD = "c03-regression-not-a-real-secret";
 const TEST_EMAILS = [INVITED_ADMIN, INVITED_MEMBER, UNINVITED];
+
+// WHATWG URL parsing normalizes hostnames first (lowercase, hex/short IPv4
+// forms to dotted-quad, IPv6 to canonical bracketed form), so these checks
+// run against canonical hosts. Only literal loopback forms are accepted;
+// arbitrary DNS names that might resolve locally are not.
+const IPV4_LOOPBACK = /^127(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
+
+export function assertLoopbackTarget(name, value) {
+  // Deliberately never echoes the raw value or any credential material.
+  const refusal = (detail) =>
+    new Error(
+      `${name} ${detail}. This harness performs service-role fixture ` +
+        `mutations and only runs against the local loopback Supabase stack ` +
+        `(allowed hosts: localhost, 127.0.0.0/8, [::1]); every non-loopback ` +
+        `target is refused and there is no remote override.`,
+    );
+  let url;
+  try {
+    url = new URL(String(value));
+  } catch {
+    throw refusal("is not a parseable URL");
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw refusal(`uses the unsupported scheme "${url.protocol}"`);
+  }
+  const host = url.hostname;
+  if (host !== "localhost" && host !== "[::1]" && !IPV4_LOOPBACK.test(host)) {
+    throw refusal(`host "${host}" is not a loopback address`);
+  }
+}
 
 let failures = 0;
 let checks = 0;
@@ -108,12 +150,21 @@ async function adminUsersByEmail(email) {
     `/auth/v1/admin/users?filter=${encodeURIComponent(email)}`,
     { token: SERVICE_ROLE_KEY },
   );
+  if (res.status >= 300) {
+    // Fail closed: a failed listing must not read as "no users".
+    throw new Error(`admin user listing for ${email}: HTTP ${res.status}`);
+  }
   const users = res.json?.users ?? [];
   return users.filter((u) => u.email === email);
 }
 
 async function mailpitClear() {
-  await fetch(`${MAILPIT_URL}/api/v1/messages`, { method: "DELETE" });
+  const res = await fetch(`${MAILPIT_URL}/api/v1/messages`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    throw new Error(`Mailpit message clear: HTTP ${res.status}`);
+  }
 }
 
 async function mailpitLatestTokenFor(
@@ -138,31 +189,112 @@ async function mailpitLatestTokenFor(
   throw new Error(`No verification email with a token arrived for ${email}`);
 }
 
-async function cleanup() {
+export async function cleanup() {
   // FK-safe order: memberships and invitations reference both the junto and
   // auth.users (claimed_by/user_id have no cascade), so remove them before the
   // users and the junto. Deleting the auth user cascades its profile.
-  await restFetch(`/rest/v1/junto_members?junto_id=eq.${JUNTO_ID}`, {
-    method: "DELETE",
-    prefer: "return=minimal",
+  //
+  // Every step is attempted and every response checked; any failure makes
+  // cleanup throw so the run cannot succeed while fixtures survive.
+  const errors = [];
+  const attempt = async (label, fn) => {
+    try {
+      await fn();
+    } catch (err) {
+      errors.push(`${label}: ${err.message}`);
+    }
+  };
+  const checkedDelete = async (label, path) => {
+    const res = await restFetch(path, {
+      method: "DELETE",
+      prefer: "return=minimal",
+    });
+    if (res.status >= 300) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+  };
+
+  await attempt("delete junto_members", () =>
+    checkedDelete(
+      "junto_members",
+      `/rest/v1/junto_members?junto_id=eq.${JUNTO_ID}`,
+    ),
+  );
+  await attempt("delete junto_invitations", () =>
+    checkedDelete(
+      "junto_invitations",
+      `/rest/v1/junto_invitations?junto_id=eq.${JUNTO_ID}`,
+    ),
+  );
+  await attempt("delete fixture auth users", async () => {
+    for (const email of TEST_EMAILS) {
+      for (const user of await adminUsersByEmail(email)) {
+        const res = await authFetch(`/auth/v1/admin/users/${user.id}`, {
+          method: "DELETE",
+          token: SERVICE_ROLE_KEY,
+        });
+        if (res.status >= 300) {
+          throw new Error(`HTTP ${res.status} deleting user for ${email}`);
+        }
+      }
+    }
   });
-  await restFetch(`/rest/v1/junto_invitations?junto_id=eq.${JUNTO_ID}`, {
-    method: "DELETE",
-    prefer: "return=minimal",
-  });
+  await attempt("delete junto", () =>
+    checkedDelete("juntos", `/rest/v1/juntos?id=eq.${JUNTO_ID}`),
+  );
+  await attempt("clear Mailpit messages", () => mailpitClear());
+
+  if (errors.length > 0) {
+    throw new Error(`cleanup failed — ${errors.join("; ")}`);
+  }
+}
+
+export async function verifyFixturesAbsent() {
+  // Cleanup responses are checked above; this independently proves the
+  // fixtures are actually gone so teardown cannot silently fail open.
+  const residues = [];
+  const expectEmptyRest = async (label, path) => {
+    const res = await restFetch(path);
+    if (res.status >= 300 || !Array.isArray(res.json)) {
+      throw new Error(`teardown verification query for ${label} failed`);
+    }
+    if (res.json.length > 0) {
+      residues.push(`${label} (${res.json.length} row(s))`);
+    }
+  };
+  await expectEmptyRest(
+    "junto_members",
+    `/rest/v1/junto_members?junto_id=eq.${JUNTO_ID}&select=user_id`,
+  );
+  await expectEmptyRest(
+    "junto_invitations",
+    `/rest/v1/junto_invitations?junto_id=eq.${JUNTO_ID}&select=id`,
+  );
+  await expectEmptyRest(
+    "juntos",
+    `/rest/v1/juntos?id=eq.${JUNTO_ID}&select=id`,
+  );
   for (const email of TEST_EMAILS) {
-    for (const user of await adminUsersByEmail(email)) {
-      await authFetch(`/auth/v1/admin/users/${user.id}`, {
-        method: "DELETE",
-        token: SERVICE_ROLE_KEY,
-      });
+    if ((await adminUsersByEmail(email)).length > 0) {
+      residues.push(`auth user ${email}`);
     }
   }
-  await restFetch(`/rest/v1/juntos?id=eq.${JUNTO_ID}`, {
-    method: "DELETE",
-    prefer: "return=minimal",
-  });
-  await mailpitClear();
+  const res = await fetch(`${MAILPIT_URL}/api/v1/messages`);
+  if (!res.ok) {
+    throw new Error(
+      `teardown verification Mailpit listing: HTTP ${res.status}`,
+    );
+  }
+  const list = await res.json();
+  const lingering = (list.messages ?? []).filter((m) =>
+    (m.To ?? []).some((t) => TEST_EMAILS.includes(t.Address)),
+  );
+  if (lingering.length > 0) {
+    residues.push(`${lingering.length} Mailpit message(s) to fixture emails`);
+  }
+  if (residues.length > 0) {
+    throw new Error(`fixtures remain after cleanup: ${residues.join(", ")}`);
+  }
 }
 
 async function seed() {
@@ -205,11 +337,7 @@ async function seed() {
   }
 }
 
-async function main() {
-  console.log("Live GoTrue mailbox-ownership regression\n");
-  await cleanup();
-  await seed();
-
+async function runChecks() {
   // 1. Uninvited signup/OTP remain rejected with no auth user.
   console.log("Uninvited signup and OTP are rejected with no auth user:");
   const uninvitedSignup = await authFetch("/auth/v1/signup", {
@@ -349,16 +477,74 @@ async function main() {
       ),
     "verified invited-member now holds an active member membership",
   );
-
-  await cleanup();
-
-  console.log(
-    `\n${checks - failures}/${checks} checks passed; ${failures} failed.`,
-  );
-  if (failures > 0) process.exit(1);
 }
 
-main().catch((err) => {
-  console.error("\nRegression harness error:", err);
-  process.exit(1);
-});
+export async function main() {
+  // Refuse any non-loopback target before the FIRST network request; the
+  // service-role key must never reach a remote stack, not even for a
+  // health check or stale-fixture cleanup.
+  assertLoopbackTarget("SUPABASE_URL", SUPABASE_URL);
+  assertLoopbackTarget("MAILPIT_URL", MAILPIT_URL);
+
+  console.log("Live GoTrue mailbox-ownership regression\n");
+
+  // Stale fixtures from an aborted earlier run are removed (checked) before
+  // seeding; a failure here aborts before anything new is created.
+  await cleanup();
+
+  let functionalError = null;
+  let teardownError = null;
+  try {
+    await seed();
+    await runChecks();
+    if (failures > 0) {
+      functionalError = new Error(
+        `${failures}/${checks} functional checks failed`,
+      );
+    }
+  } catch (err) {
+    functionalError = err;
+  } finally {
+    // Teardown always runs and fails closed; it must not mask a functional
+    // failure, and a teardown failure alone must still fail the run.
+    try {
+      await cleanup();
+      await verifyFixturesAbsent();
+    } catch (err) {
+      teardownError = err;
+    }
+  }
+  return { functionalError, teardownError, checks, failures };
+}
+
+export function exitCodeFor({ functionalError, teardownError }) {
+  return functionalError || teardownError ? 1 : 0;
+}
+
+async function run() {
+  const outcome = await main();
+  console.log(
+    `\n${outcome.checks - outcome.failures}/${outcome.checks} checks passed; ${outcome.failures} failed.`,
+  );
+  if (outcome.functionalError) {
+    console.error(`Functional failure: ${outcome.functionalError.message}`);
+  }
+  if (outcome.teardownError) {
+    console.error(
+      `Teardown failure (fixtures may remain): ${outcome.teardownError.message}`,
+    );
+  }
+  process.exit(exitCodeFor(outcome));
+}
+
+// Importing this module (e.g. from harness-safety.test.mjs) must not start a
+// run or touch the network.
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  run().catch((err) => {
+    console.error("\nRegression harness error:", err);
+    process.exit(1);
+  });
+}
