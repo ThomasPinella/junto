@@ -33,6 +33,106 @@
       "base": "51d39dc920b4fee48b41f24c2fbdba9f34f204c3",
       "result": "db9c1c8714b1410fafc79935e9b04e15034f46af",
       "process_handle": "proc_69e6ee78c70a"
+    },
+    "C02": {
+      "task": "T02",
+      "role": "builder",
+      "state": "reconciliation_needs_fixes",
+      "branch": "dev/core-product-t02",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t02",
+      "base": "a97aeb37d8d23106496000b506da27de1b4668d4",
+      "result": "4ee30ed9b116793614586091d5cb8b36274ffdea",
+      "process_handle": "proc_f1de950bf491"
+    },
+    "R03": {
+      "task": "T02",
+      "role": "reconciler",
+      "state": "completed_needs_fixes",
+      "branch": "dev/core-product-t02",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t02",
+      "base": "a97aeb37d8d23106496000b506da27de1b4668d4",
+      "result": "4ee30ed9b116793614586091d5cb8b36274ffdea",
+      "process_handle": "proc_f3853505eb85"
+    },
+    "C03": {
+      "task": "T02-fix-email-verification",
+      "role": "builder",
+      "state": "reconciliation_needs_fixes",
+      "branch": "dev/core-product-t02",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t02",
+      "base": "4ee30ed9b116793614586091d5cb8b36274ffdea",
+      "result": "c6d6c66a7334e4acd7c0d547c0ba9f598ff48fb2",
+      "process_handle": "proc_c32024167ab7"
+    },
+    "R04": {
+      "task": "T02-fix-email-verification",
+      "role": "reconciler",
+      "state": "completed_needs_fixes",
+      "branch": "dev/core-product-t02",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t02",
+      "base": "4ee30ed9b116793614586091d5cb8b36274ffdea",
+      "result": "c6d6c66a7334e4acd7c0d547c0ba9f598ff48fb2",
+      "process_handle": "proc_2c5f2c2363e1"
+    },
+    "C04": {
+      "task": "T02-fix-auth-harness-safety",
+      "role": "builder",
+      "state": "reconciliation_needs_fixes",
+      "branch": "dev/core-product-t02",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t02",
+      "base": "c6d6c66a7334e4acd7c0d547c0ba9f598ff48fb2",
+      "result": "24ac8b6e855728db77ab387f58d26d1cca25a4df",
+      "process_handle": "proc_1e108c8a4be8"
+    },
+    "R05": {
+      "task": "T02-fix-auth-harness-safety",
+      "role": "reconciler",
+      "state": "completed_needs_fixes",
+      "branch": "dev/core-product-t02",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t02",
+      "base": "c6d6c66a7334e4acd7c0d547c0ba9f598ff48fb2",
+      "result": "24ac8b6e855728db77ab387f58d26d1cca25a4df",
+      "process_handle": "proc_c0f25f6dad9b"
+    },
+    "C05": {
+      "task": "T02-final-auth-harness-hardening",
+      "role": "builder",
+      "state": "reconciliation_needs_fixes",
+      "branch": "dev/core-product-t02",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t02",
+      "base": "24ac8b6e855728db77ab387f58d26d1cca25a4df",
+      "result": "dce552906864f338a660ec023868e08369bccb86",
+      "process_handle": "proc_ae0a9a03b30c"
+    },
+    "R06": {
+      "task": "T02-final-auth-harness-hardening",
+      "role": "reconciler",
+      "state": "completed_needs_fixes",
+      "branch": "dev/core-product-t02",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t02",
+      "base": "24ac8b6e855728db77ab387f58d26d1cca25a4df",
+      "result": "dce552906864f338a660ec023868e08369bccb86",
+      "process_handle": "proc_3ca0b7a62262"
+    },
+    "C06": {
+      "task": "T02-mechanical-auth-harness-closure",
+      "role": "builder",
+      "state": "integrated",
+      "branch": "dev/core-product-t02",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t02",
+      "base": "dce552906864f338a660ec023868e08369bccb86",
+      "result": "2608ba655a20a9b648dfcebd1ff96cb3d27311c6",
+      "process_handle": "proc_81e48dfb08d0"
+    },
+    "R07": {
+      "task": "T02-mechanical-auth-harness-closure",
+      "role": "reconciler",
+      "state": "completed_clean",
+      "branch": "dev/core-product-t02",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t02",
+      "base": "dce552906864f338a660ec023868e08369bccb86",
+      "result": "2608ba655a20a9b648dfcebd1ff96cb3d27311c6",
+      "process_handle": "proc_513d2c43952c"
     }
   }
 }

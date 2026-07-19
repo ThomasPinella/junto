@@ -64,7 +64,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T01
 - Outcome: Versioned migrations define profiles, Juntos, invitations, and memberships; normalized invitations can be claimed only by the matching verified identity; active memberships govern access independently per Junto; deactivation revokes access immediately; admin authority remains Junto-scoped.
 - Proof: Database tests cover normalized-email matching, successful and rejected claims, duplicate claims, multiple memberships, member/admin boundaries, deactivation, unauthenticated denial, and denied cross-user/cross-Junto access using fixtures for at least two Juntos.
-- Status: ready; local signup configuration must be decided deliberately
+- Status: complete; cumulative T02 integrated at `2608ba655a20a9b648dfcebd1ff96cb3d27311c6` after clean R07 reconciliation. Strict invitation gating, real mailbox verification, durable independently Junto-scoped membership authorization, denied-path coverage, and the fail-closed local Auth harness are verified.
 
 ## T03 — Deliver the invitation-gated member entry and portal shell
 
@@ -72,7 +72,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T02
 - Outcome: An invited person can authenticate, claim the matching invitation, enter the correct Junto portal, switch between active memberships, and see role-appropriate navigation; an uninvited or deactivated person receives a safe rejection and no private data.
 - Proof: Integration and Playwright coverage demonstrate invited activation, rejected registration, multi-Junto switching, Junto-scoped admin navigation, session handling, and immediate access loss after membership deactivation.
-- Status: blocked
+- Status: ready; T02 is integrated and R07 explicitly unblocked this assignment.
 
 ## T04 — Implement meetings as a complete vertical slice
 
