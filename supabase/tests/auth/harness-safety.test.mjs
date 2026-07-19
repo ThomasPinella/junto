@@ -942,6 +942,291 @@ async function main() {
     }
   }
 
+  const nestedCanary = "C29_NESTED_SECRET_CANARY";
+  const assertSchemaFailure = (err, fieldPattern, label) => {
+    ok(
+      err !== null &&
+        /malformed response body/i.test(err.message) &&
+        fieldPattern.test(err.message) &&
+        !err.message.includes(nestedCanary) &&
+        !/eyJ|Bearer|Authorization|apikey/.test(err.message),
+      label,
+    );
+  };
+
+  console.log(
+    "\nMalformed nested Auth users fail closed during absence checks:",
+  );
+  const malformedAuthUsers = [
+    ["user object", null, /users\[0\].*object/i],
+    ["missing id", { email: FIX.invitedAdmin }, /users\[0\]\.id/i],
+    ["non-string id", { id: 7, email: FIX.invitedAdmin }, /users\[0\]\.id/i],
+    ["blank id", { id: "   ", email: FIX.invitedAdmin }, /users\[0\]\.id/i],
+    ["missing email", { id: "user-1" }, /users\[0\]\.email/i],
+    ["non-string email", { id: "user-1", email: 7 }, /users\[0\]\.email/i],
+    ["blank email", { id: "user-1", email: "   " }, /users\[0\]\.email/i],
+  ];
+  for (const [caseName, user, fieldPattern] of malformedAuthUsers) {
+    const calls = [];
+    const body = { users: [user], opaque: nestedCanary };
+    const err = await withStubbedFetch(
+      overlayStub(calls, [
+        {
+          match: "/auth/v1/admin/users?",
+          respond: () => jsonResponse(JSON.stringify(body)),
+        },
+      ]),
+      () => rejection(harness.verifyFixturesAbsent()),
+    );
+    assertSchemaFailure(
+      err,
+      fieldPattern,
+      `Auth ${caseName} is rejected with fixed schema-only diagnostics`,
+    );
+    ok(
+      calls.length === 7 &&
+        calls.at(-1)?.method === "GET" &&
+        calls.at(-1)?.url.includes("/api/v1/messages"),
+      `Auth ${caseName} does not short-circuit independent absence phases`,
+    );
+  }
+  {
+    const calls = [];
+    const normalizedVariant = `  ${FIX.invitedAdmin.toUpperCase()}  `;
+    const err = await withStubbedFetch(
+      overlayStub(calls, [
+        {
+          match: `filter=${encodeURIComponent(FIX.invitedAdmin)}`,
+          respond: () =>
+            jsonResponse(
+              JSON.stringify({
+                users: [{ id: "user-normalized", email: normalizedVariant }],
+              }),
+            ),
+        },
+      ]),
+      () => rejection(harness.verifyFixturesAbsent()),
+    );
+    ok(
+      err !== null && /auth user/.test(err.message),
+      "valid Auth email strings are normalized before fixture comparison",
+    );
+  }
+
+  console.log(
+    "\nMalformed nested Mailpit summaries fail closed during absence checks:",
+  );
+  const malformedMailpitSummaries = [
+    ["summary object", null, /messages\[0\].*object/i],
+    ["missing id", { To: [] }, /messages\[0\]\.ID/i],
+    ["non-string id", { ID: 7, To: [] }, /messages\[0\]\.ID/i],
+    ["blank id", { ID: "   ", To: [] }, /messages\[0\]\.ID/i],
+    ["missing To", { ID: "m1" }, /messages\[0\]\.To/i],
+    ["non-array To", { ID: "m1", To: {} }, /messages\[0\]\.To/i],
+    ["recipient object", { ID: "m1", To: [null] }, /To\[0\].*object/i],
+    ["missing address", { ID: "m1", To: [{}] }, /To\[0\]\.Address/i],
+    [
+      "non-string address",
+      { ID: "m1", To: [{ Address: 7 }] },
+      /To\[0\]\.Address/i,
+    ],
+    [
+      "blank address",
+      { ID: "m1", To: [{ Address: "   " }] },
+      /To\[0\]\.Address/i,
+    ],
+  ];
+  for (const [caseName, summary, fieldPattern] of malformedMailpitSummaries) {
+    const calls = [];
+    const body = { messages: [summary], opaque: nestedCanary };
+    const err = await withStubbedFetch(
+      overlayStub(calls, [
+        {
+          match: "/api/v1/messages",
+          method: "GET",
+          respond: () => jsonResponse(JSON.stringify(body)),
+        },
+      ]),
+      () => rejection(harness.verifyFixturesAbsent()),
+    );
+    assertSchemaFailure(
+      err,
+      fieldPattern,
+      `Mailpit ${caseName} is rejected with fixed schema-only diagnostics`,
+    );
+    ok(
+      calls.length === 7 &&
+        calls.filter((c) => c.url.includes("/auth/v1/admin/users?filter="))
+          .length === 3,
+      `Mailpit ${caseName} runs every earlier independent absence phase`,
+    );
+  }
+  {
+    const calls = [];
+    const normalizedVariant = `  ${FIX.invitedMember.toUpperCase()}  `;
+    const err = await withStubbedFetch(
+      overlayStub(calls, [
+        {
+          match: "/api/v1/messages",
+          method: "GET",
+          respond: () =>
+            jsonResponse(
+              JSON.stringify({
+                messages: [
+                  {
+                    ID: "m-normalized",
+                    To: [{ Address: normalizedVariant }],
+                  },
+                ],
+              }),
+            ),
+        },
+      ]),
+      () => rejection(harness.verifyFixturesAbsent()),
+    );
+    ok(
+      err !== null && /Mailpit message/.test(err.message),
+      "valid Mailpit address strings are normalized before fixture comparison",
+    );
+  }
+  {
+    const calls = [];
+    const messageId = "message/id?opaque=fragment";
+    let result = null;
+    let error = null;
+    try {
+      result = await withStubbedFetch(
+        overlayStub(calls, [
+          {
+            match: "/api/v1/messages",
+            method: "GET",
+            respond: () =>
+              jsonResponse(
+                JSON.stringify({
+                  messages: [
+                    {
+                      ID: messageId,
+                      To: [{ Address: FIX.invitedMember }],
+                    },
+                  ],
+                }),
+              ),
+          },
+          {
+            match: `/api/v1/message/${encodeURIComponent(messageId)}`,
+            method: "GET",
+            respond: () =>
+              jsonResponse(
+                JSON.stringify({
+                  Text: "?token=encoded123&type=magiclink",
+                  HTML: "",
+                }),
+              ),
+          },
+        ]),
+        () =>
+          harness.mailpitLatestTokenFor(FIX.invitedMember, {
+            attempts: 1,
+            delayMs: 1,
+          }),
+      );
+    } catch (err) {
+      error = err;
+    }
+    ok(
+      error === null &&
+        result?.token === "encoded123" &&
+        result.type === "magiclink" &&
+        calls.length === 2 &&
+        calls[1].url.endsWith(
+          `/api/v1/message/${encodeURIComponent(messageId)}`,
+        ) &&
+        calls.every((call) => call.redirect === "error"),
+      "Mailpit message IDs are encoded into one guarded detail-path segment",
+    );
+  }
+
+  console.log("\nMalformed Mailpit details fail closed without coercion:");
+  const validFixtureMail = JSON.stringify({
+    messages: [{ ID: "m-detail", To: [{ Address: FIX.invitedMember }] }],
+  });
+  const malformedMailpitDetails = [
+    ["detail object", null, /expected an object/i],
+    ["missing Text", { HTML: nestedCanary }, /Text/i],
+    ["non-string Text", { Text: 7, HTML: nestedCanary }, /Text/i],
+    ["missing HTML", { Text: nestedCanary }, /HTML/i],
+    ["non-string HTML", { Text: nestedCanary, HTML: 7 }, /HTML/i],
+  ];
+  for (const [caseName, detail, fieldPattern] of malformedMailpitDetails) {
+    const calls = [];
+    const err = await withStubbedFetch(
+      overlayStub(calls, [
+        {
+          match: "/api/v1/messages",
+          method: "GET",
+          respond: () => jsonResponse(validFixtureMail),
+        },
+        {
+          match: "/api/v1/message/m-detail",
+          method: "GET",
+          respond: () => jsonResponse(JSON.stringify(detail)),
+        },
+      ]),
+      () =>
+        rejection(
+          harness.mailpitLatestTokenFor(FIX.invitedMember, {
+            attempts: 3,
+            delayMs: 1,
+          }),
+        ),
+    );
+    assertSchemaFailure(
+      err,
+      fieldPattern,
+      `Mailpit ${caseName} is rejected with fixed schema-only diagnostics`,
+    );
+    ok(
+      calls.length === 2 &&
+        calls[0].url.endsWith("/api/v1/messages") &&
+        calls[1].url.endsWith("/api/v1/message/m-detail"),
+      `Mailpit ${caseName} fails immediately instead of polling again`,
+    );
+  }
+
+  console.log("\nNested Auth failures remain exhaustive during cleanup:");
+  {
+    const calls = [];
+    const err = await withStubbedFetch(
+      overlayStub(calls, [
+        {
+          match: `filter=${encodeURIComponent(FIX.invitedAdmin)}`,
+          respond: () =>
+            jsonResponse(
+              JSON.stringify({
+                users: [{ id: "", email: nestedCanary }],
+              }),
+            ),
+        },
+      ]),
+      () => rejection(harness.cleanup()),
+    );
+    assertSchemaFailure(
+      err,
+      /users\[0\]\.id/i,
+      "cleanup rejects a malformed nested Auth user without exposing it",
+    );
+    ok(
+      calls.length === 7 &&
+        calls.filter((c) => c.url.includes("/auth/v1/admin/users?filter="))
+          .length === 3 &&
+        calls.some(
+          (c) => c.method === "DELETE" && c.url.includes("/rest/v1/juntos?"),
+        ) &&
+        calls.at(-1)?.url.endsWith("/api/v1/messages"),
+      "malformed nested Auth cleanup still attempts every fixture class and identity",
+    );
+  }
+
   // ── 6. Cleanup is exhaustive and fails closed ──────────────────────────
   console.log("\nCleanup attempts every fixture identity and fails closed:");
   {
@@ -1183,7 +1468,10 @@ async function main() {
     const err = await withStubbedFetch(cleanStackStub(calls), () =>
       rejection(harness.verifyFixturesAbsent()),
     );
-    ok(err === null, "verifyFixturesAbsent() passes when nothing remains");
+    ok(
+      err === null,
+      "valid empty PostgREST, Auth, and Mailpit collections prove absence",
+    );
   }
 
   // ── 8. In-process main(): healthy exact trace, preparation failure, and
@@ -1271,6 +1559,100 @@ async function main() {
     ok(
       calls.length === 7,
       `all 7 preparation cleanup operations were still attempted before the refusal (saw ${calls.length})`,
+    );
+  }
+  {
+    const calls = [];
+    const mod = await importHarness("main-prep-nested-auth-failure");
+    const err = await withStubbedFetch(
+      overlayStub(calls, [
+        {
+          match: `filter=${encodeURIComponent(FIX.invitedAdmin)}`,
+          respond: () =>
+            jsonResponse(
+              JSON.stringify({
+                users: [{ email: nestedCanary }],
+              }),
+            ),
+        },
+      ]),
+      () => withMutedConsole(() => rejection(mod.main())),
+    );
+    ok(
+      err !== null &&
+        /refusing to seed new fixtures/i.test(err.message) &&
+        /users\[0\]\.id/i.test(err.message) &&
+        !err.message.includes(nestedCanary),
+      "main() rejects a nested malformed Auth success during stale-fixture preparation",
+    );
+    ok(
+      calls.filter((c) => c.method === "POST").length === 0 &&
+        calls.length === 7 &&
+        calls.at(-1)?.url.endsWith("/api/v1/messages"),
+      "nested malformed preparation runs all cleanup phases and seeds nothing",
+    );
+  }
+
+  console.log(
+    "\nmain() preserves a malformed-detail failure while completing teardown:",
+  );
+  {
+    const calls = [];
+    const mod = await importHarness("main-detail-failure");
+    const healthy = simulatedHealthyStack(FIX, calls);
+    const outcome = await withStubbedFetch(
+      async (input, init = {}) => {
+        const url = new URL(String(input));
+        if (
+          url.pathname === "/api/v1/message/m1" &&
+          (init.method ?? "GET") === "GET"
+        ) {
+          record(calls, input, init);
+          return jsonResponse(
+            JSON.stringify({ Text: nestedCanary, HTML: null }),
+          );
+        }
+        return healthy(input, init);
+      },
+      () => withMutedConsole(() => mod.main()),
+    );
+    ok(
+      outcome.functionalError !== null &&
+        /malformed response body/i.test(outcome.functionalError.message) &&
+        /HTML/i.test(outcome.functionalError.message) &&
+        !outcome.functionalError.message.includes(nestedCanary),
+      "main() retains the fixed schema-only malformed Mailpit detail failure",
+    );
+    ok(
+      outcome.teardownError === null,
+      "main() cleanup and independent absence verification both complete after malformed detail",
+    );
+    const detailIndex = calls.findIndex((c) =>
+      c.url.endsWith("/api/v1/message/m1"),
+    );
+    const cleanupIndex = calls.findIndex(
+      (c, index) =>
+        index > detailIndex &&
+        c.method === "DELETE" &&
+        c.url.includes("/rest/v1/junto_members?"),
+    );
+    const absenceIndex = calls.findIndex(
+      (c, index) =>
+        index > cleanupIndex &&
+        c.method === "GET" &&
+        c.url.includes("/rest/v1/junto_members?") &&
+        c.url.includes("select=user_id"),
+    );
+    ok(
+      detailIndex !== -1 &&
+        cleanupIndex > detailIndex &&
+        absenceIndex > cleanupIndex &&
+        calls.at(-1)?.url.endsWith("/api/v1/messages"),
+      "every final cleanup and absence phase runs in order after malformed detail",
+    );
+    ok(
+      mod.exitCodeFor(outcome) === 1,
+      "malformed detail remains a nonzero run result after clean teardown",
     );
   }
 

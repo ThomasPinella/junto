@@ -8,9 +8,14 @@ Unauthenticated users may read:
 
 - active public Juntos;
 - published public essays;
-- profiles associated with public essays;
+- the narrow author identity fields included in the eligible-public-essay
+  projection, such as author display name and slug;
 - public meeting metadata;
 - publicly readable comments attached to public essays.
+
+Unauthenticated users may not read the profiles base table. Public author
+identity must be derived only from eligible published public essays, so a
+profile without an eligible public essay has no anonymous read path.
 
 Unauthenticated users may not write any records.
 
@@ -26,7 +31,13 @@ junto_members.status = active
 
 A member may create an essay only for themselves.
 
-A member may update or delete only their own essays unless they are an administrator.
+A member may update only their own essay content. Only the author may edit an
+essay body; administrative authority never permits rewriting the author's
+words.
+
+There is no essay delete path for members or administrators in this MVP
+slice. Unpublishing is the bounded revocation path and preserves the essay
+record.
 
 The application must prevent a member from changing:
 
@@ -53,5 +64,10 @@ A user must not receive unauthorized messages through either normal queries or r
 Admin rights should be scoped through:
 
 junto_members.role = admin
+
+Within the administrator's own Junto, essay moderation is limited to bounded
+metadata and publication controls, including visibility and publication
+state. Administrators may not rewrite essay bodies and may not delete essays
+in this MVP slice.
 
 Never use a global application-wide admin assumption for ordinary Junto management.

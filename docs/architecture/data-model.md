@@ -89,7 +89,6 @@ Recommended values:
 status:
 - draft
 - published
-- archived
 visibility:
 - public
 - members_only

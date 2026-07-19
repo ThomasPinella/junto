@@ -180,6 +180,93 @@ async function mailpitRequest(path, options) {
   return guardedRequest("MAILPIT_URL", `${MAILPIT_URL}${path}`, options);
 }
 
+// Successful list responses are authorization evidence during setup,
+// cleanup, and the independent absence proof. Validate every nested element
+// before filtering so a malformed HTTP 200 can never be mistaken for an
+// empty or unrelated collection. Diagnostics name only schema locations and
+// never include response values, bodies, links, headers, or credentials.
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizedComparisonString(value) {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim().toLowerCase()
+    : null;
+}
+
+function parseAdminUsers(json, context) {
+  const malformed = (detail) =>
+    new Error(`${context}: malformed response body (${detail})`);
+  if (!isRecord(json) || !Array.isArray(json.users)) {
+    throw malformed('expected a "users" array');
+  }
+  return json.users.map((user, index) => {
+    if (!isRecord(user)) {
+      throw malformed(`users[${index}] is not an object`);
+    }
+    if (typeof user.id !== "string" || user.id.trim().length === 0) {
+      throw malformed(`users[${index}].id is not a nonempty string`);
+    }
+    const email = normalizedComparisonString(user.email);
+    if (email === null) {
+      throw malformed(`users[${index}].email is not a nonempty string address`);
+    }
+    return { id: user.id, email };
+  });
+}
+
+function parseMailpitMessages(json, context) {
+  const malformed = (detail) =>
+    new Error(
+      `Mailpit message listing (${context}): malformed response body (${detail})`,
+    );
+  if (!isRecord(json) || !Array.isArray(json.messages)) {
+    throw malformed('expected a "messages" array');
+  }
+  return json.messages.map((message, messageIndex) => {
+    if (!isRecord(message)) {
+      throw malformed(`messages[${messageIndex}] is not an object`);
+    }
+    if (typeof message.ID !== "string" || message.ID.trim().length === 0) {
+      throw malformed(`messages[${messageIndex}].ID is not a nonempty string`);
+    }
+    if (!Array.isArray(message.To)) {
+      throw malformed(`messages[${messageIndex}].To is not an array`);
+    }
+    const To = message.To.map((recipient, recipientIndex) => {
+      if (!isRecord(recipient)) {
+        throw malformed(
+          `messages[${messageIndex}].To[${recipientIndex}] is not an object`,
+        );
+      }
+      const Address = normalizedComparisonString(recipient.Address);
+      if (Address === null) {
+        throw malformed(
+          `messages[${messageIndex}].To[${recipientIndex}].Address is not a nonempty string address`,
+        );
+      }
+      return { Address };
+    });
+    return { ID: message.ID, To };
+  });
+}
+
+function parseMailpitMessageDetail(json) {
+  const malformed = (detail) =>
+    new Error(`Mailpit message detail: malformed response body (${detail})`);
+  if (!isRecord(json)) {
+    throw malformed("expected an object");
+  }
+  if (typeof json.Text !== "string") {
+    throw malformed('"Text" is not a string');
+  }
+  if (typeof json.HTML !== "string") {
+    throw malformed('"HTML" is not a string');
+  }
+  return { Text: json.Text, HTML: json.HTML };
+}
+
 async function adminUsersByEmail(email) {
   // The admin filter is a partial match; narrow to exact email in code.
   const res = await authFetch(
@@ -190,15 +277,9 @@ async function adminUsersByEmail(email) {
     // Fail closed: a failed listing must not read as "no users".
     throw new Error(`admin user listing for ${email}: HTTP ${res.status}`);
   }
-  if (!res.json || !Array.isArray(res.json.users)) {
-    // Fail closed: an HTTP 2xx with a missing/null/non-array `users` value
-    // must not read as "no users" either.
-    throw new Error(
-      `admin user listing for ${email}: malformed response body ` +
-        `(expected a "users" array)`,
-    );
-  }
-  return res.json.users.filter((u) => u.email === email);
+  return parseAdminUsers(res.json, `admin user listing for ${email}`).filter(
+    (user) => user.email === normalizedComparisonString(email),
+  );
 }
 
 async function mailpitClear() {
@@ -221,13 +302,7 @@ async function mailpitMessages(context) {
   } catch {
     json = null;
   }
-  if (!json || !Array.isArray(json.messages)) {
-    throw new Error(
-      `Mailpit message listing (${context}): malformed response body ` +
-        `(expected a "messages" array)`,
-    );
-  }
-  return json.messages;
+  return parseMailpitMessages(json, context);
 }
 
 export async function mailpitLatestTokenFor(
@@ -236,16 +311,25 @@ export async function mailpitLatestTokenFor(
 ) {
   for (let i = 0; i < attempts; i += 1) {
     const messages = await mailpitMessages("verification-email polling");
+    const normalizedEmail = normalizedComparisonString(email);
     const match = messages.find((m) =>
-      (m.To ?? []).some((t) => t.Address === email),
+      m.To.some((t) => t.Address === normalizedEmail),
     );
     if (match) {
-      const msgRes = await mailpitRequest(`/api/v1/message/${match.ID}`);
+      const msgRes = await mailpitRequest(
+        `/api/v1/message/${encodeURIComponent(match.ID)}`,
+      );
       if (!msgRes.ok) {
         throw new Error(`Mailpit message detail: HTTP ${msgRes.status}`);
       }
-      const msg = await msgRes.json();
-      const body = `${msg.Text ?? ""}\n${msg.HTML ?? ""}`;
+      let detailJson = null;
+      try {
+        detailJson = await msgRes.json();
+      } catch {
+        detailJson = null;
+      }
+      const msg = parseMailpitMessageDetail(detailJson);
+      const body = `${msg.Text}\n${msg.HTML}`;
       const m = body.match(/[?&]token=([a-zA-Z0-9]+)&type=([a-zA-Z0-9_]+)/);
       if (m) return { token: m[1], type: m[2] };
     }
@@ -380,7 +464,7 @@ export async function verifyFixturesAbsent() {
   await check(async () => {
     const messages = await mailpitMessages("fixture-absence verification");
     const lingering = messages.filter((m) =>
-      (m.To ?? []).some((t) => TEST_EMAILS.includes(t.Address)),
+      m.To.some((t) => TEST_EMAILS.includes(t.Address)),
     );
     if (lingering.length > 0) {
       residues.push(`${lingering.length} Mailpit message(s) to fixture emails`);
