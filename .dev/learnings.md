@@ -11,3 +11,7 @@ Add only verified, non-obvious knowledge likely to prevent repeated mistakes acr
 - When content and visibility require separate mutations, ordering is a privacy boundary: withdraw public visibility before writing newly private content, expose publicly only after content persistence succeeds, and report safe partial outcomes truthfully.
 
 - When a typed Next.js route belongs to a later task, present its canonical URL as non-linked text until that route exists. Adding a typed `Link` prematurely can make the production build enforce future-task implementation and blur scope boundaries.
+
+- Parameterized public detail routes must enforce the configured publication scope independently; projection-level public eligibility does not establish that a record belongs to the publication currently being served.
+
+- For mobile target-size regressions, assert the rendered bounding box of the actual shared anchor under a real mobile device profile. CSS declarations and font line height alone do not prove an accessible hit area.

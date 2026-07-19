@@ -291,6 +291,71 @@
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "effort": "medium"
+    },
+    "C17": {
+      "task": "T07",
+      "role": "builder",
+      "state": "integrated_with_fixes",
+      "branch": "dev/core-product-t07",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t07",
+      "base": "1d1af0797cb09e83aef0bf596469951fb74a52b2",
+      "result": "a17833c804d24151a8daf971df4bc53c7886c399",
+      "process_handle": "proc_6a7a28d41522",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "medium"
+    },
+    "C18": {
+      "task": "T07-fix-live-teardown",
+      "role": "builder",
+      "state": "integrated",
+      "branch": "dev/core-product-t07",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t07",
+      "base": "a17833c804d24151a8daf971df4bc53c7886c399",
+      "result": "c9246c498cead1a3ec31bb64ed2ae5f71d5ccda0",
+      "process_handle": "proc_f726c447403a",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "medium"
+    },
+    "R19": {
+      "task": "T07-corrected",
+      "role": "reconciler",
+      "state": "completed_needs_fixes",
+      "branch": "dev/core-product-t07",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t07",
+      "base": "1d1af0797cb09e83aef0bf596469951fb74a52b2",
+      "result": "c9246c498cead1a3ec31bb64ed2ae5f71d5ccda0",
+      "process_handle": "proc_6079c8473bae",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "medium"
+    },
+    "C20": {
+      "task": "T07-fix-configured-scope-mobile-targets",
+      "role": "builder",
+      "state": "integrated",
+      "branch": "dev/core-product-t07",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t07",
+      "base": "c9246c498cead1a3ec31bb64ed2ae5f71d5ccda0",
+      "result": "6609bc03bcecc6f8ccacdf31a658fc764fe620bd",
+      "process_handle": "proc_7ad1a28d6849",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "medium"
+    },
+    "R21": {
+      "task": "T07-final-corrected",
+      "role": "reconciler",
+      "state": "completed_clean",
+      "branch": "dev/core-product-t07",
+      "worktree": "/home/thomas/projects/junto-worktrees/core-product-t07",
+      "base": "1d1af0797cb09e83aef0bf596469951fb74a52b2",
+      "result": "6609bc03bcecc6f8ccacdf31a658fc764fe620bd",
+      "process_handle": "proc_14441cd40484",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "medium"
     }
   }
 }

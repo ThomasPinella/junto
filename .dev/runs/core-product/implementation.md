@@ -104,7 +104,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T06
 - Outcome: Visitors can use a meeting-led public homepage, essay archive, essay reading pages, author pages, and meeting pages; browsing by author and meeting works; implemented surfaces follow the approved editorial hierarchy and reveal only published public content.
 - Proof: Integration tests verify public queries and metadata include only eligible records; Playwright covers homepage-to-essay, archive-by-author, archive-by-meeting, author, and meeting journeys on desktop and mobile; accessibility checks and visual review confirm readable long-form typography and keyboard operation.
-- Status: ready; corrected T06 is integrated and R16 approved unblocking.
+- Status: complete; fully corrected cumulative T07 integrated at `6609bc03bcecc6f8ccacdf31a658fc764fe620bd`. C17 delivered the archive, C18 fixed exhaustive teardown, C20 enforced configured publication scope and mobile target sizes, and R21 returned clean. Integration checks passed with 160 unit/component tests and production build.
 
 ## T08 — Prove the integrated core-product journeys and deployment readiness
 
@@ -112,7 +112,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T02, T03, T04, T05, T06, T07
 - Outcome: The repository can be reset locally and exercise the complete invitation → membership → meeting → writing → publication → public-reading loop while maintaining two-Junto isolation. Railway configuration is documented and stateless without performing a deployment.
 - Proof: From a clean local reset, migrations, seeds, database tests, lint, typecheck, unit/integration tests, critical Playwright journeys, and production build all pass; focused adversarial checks verify denied cross-Junto access, deactivation, visibility revocation, metadata/sitemap behavior, and cache-safe private responses.
-- Status: blocked
+- Status: ready; corrected T07 is integrated and R21 approved unblocking.
 
 ## Deferred and unresolved
 
