@@ -54,12 +54,31 @@ describe("routes", () => {
     );
   });
 
+  it("scopes the author workspace routes to the selected Junto", () => {
+    const id = "00000000-0000-4000-a000-000000000001";
+    expect(routes.portalEssays("philadelphia")).toBe(
+      "/portal/philadelphia/essays",
+    );
+    expect(routes.portalEssayNew("philadelphia")).toBe(
+      "/portal/philadelphia/essays/new",
+    );
+    expect(routes.portalEssayEdit("philadelphia", id)).toBe(
+      `/portal/philadelphia/essays/${id}/edit`,
+    );
+    expect(routes.portalEssayPreview("philadelphia", id)).toBe(
+      `/portal/philadelphia/essays/${id}/preview`,
+    );
+  });
+
   it("URL-encodes untrusted route segments", () => {
     expect(routes.publicMeeting("a/b", "c?d")).toBe(
       "/juntos/a%2Fb/meetings/c%3Fd",
     );
     expect(routes.portalMeeting("a b", "x#y")).toBe(
       "/portal/a%20b/meetings/x%23y",
+    );
+    expect(routes.portalEssayEdit("a b", "x#y")).toBe(
+      "/portal/a%20b/essays/x%23y/edit",
     );
   });
 });

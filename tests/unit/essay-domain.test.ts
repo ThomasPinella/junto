@@ -10,6 +10,8 @@ import {
   essayWriteErrorKey,
   needsPublicExposureConfirmation,
   parseEssayDraftForm,
+  parseEssayWorkspaceForm,
+  hasExplicitPublicExposureConfirmation,
   publicEssayFromRow,
   publicEssayRowSchema,
 } from "@/lib/essay-domain";
@@ -160,6 +162,52 @@ describe("parseEssayDraftForm", () => {
     expect(
       parseEssayDraftForm(formData({ ...valid, "meeting-id": "not-a-uuid" })),
     ).toEqual({ ok: false, errorKey: "meeting-invalid" });
+  });
+});
+
+describe("essay workspace form", () => {
+  const valid = {
+    title: "On patience",
+    subtitle: "A note",
+    "body-markdown": "A paragraph.",
+    "meeting-id": "11111111-2222-4333-8444-555555555555",
+    visibility: "members_only",
+  };
+
+  it("keeps visibility explicit and separate from draft content", () => {
+    expect(parseEssayWorkspaceForm(formData(valid))).toEqual({
+      ok: true,
+      input: {
+        draft: {
+          title: "On patience",
+          subtitle: "A note",
+          bodyMarkdown: "A paragraph.",
+          meetingId: "11111111-2222-4333-8444-555555555555",
+        },
+        visibility: "members_only",
+      },
+    });
+  });
+
+  it("fails closed when visibility is missing or invented", () => {
+    for (const visibility of ["", "private", "PUBLIC"]) {
+      expect(
+        parseEssayWorkspaceForm(formData({ ...valid, visibility })),
+      ).toEqual({ ok: false, errorKey: "visibility-invalid" });
+    }
+  });
+
+  it("recognizes only the literal checked confirmation value", () => {
+    for (const value of [undefined, "", "true", "false", "1", "yes"]) {
+      const data = formData(valid);
+      if (value !== undefined) data.set("confirm-public-exposure", value);
+      expect(hasExplicitPublicExposureConfirmation(data), String(value)).toBe(
+        false,
+      );
+    }
+    const confirmed = formData(valid);
+    confirmed.set("confirm-public-exposure", "on");
+    expect(hasExplicitPublicExposureConfirmation(confirmed)).toBe(true);
   });
 });
 

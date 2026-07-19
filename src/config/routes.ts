@@ -28,6 +28,18 @@ export const routes = {
   portalMeetings(juntoSlug: string): `/portal/${string}` {
     return `/portal/${encodeURIComponent(juntoSlug)}/meetings`;
   },
+  portalEssays(juntoSlug: string): `/portal/${string}` {
+    return `/portal/${encodeURIComponent(juntoSlug)}/essays`;
+  },
+  portalEssayNew(juntoSlug: string): `/portal/${string}` {
+    return `/portal/${encodeURIComponent(juntoSlug)}/essays/new`;
+  },
+  portalEssayEdit(juntoSlug: string, essayId: string): `/portal/${string}` {
+    return `/portal/${encodeURIComponent(juntoSlug)}/essays/${encodeURIComponent(essayId)}/edit`;
+  },
+  portalEssayPreview(juntoSlug: string, essayId: string): `/portal/${string}` {
+    return `/portal/${encodeURIComponent(juntoSlug)}/essays/${encodeURIComponent(essayId)}/preview`;
+  },
   portalMeeting(juntoSlug: string, meetingId: string): `/portal/${string}` {
     return `/portal/${encodeURIComponent(juntoSlug)}/meetings/${encodeURIComponent(meetingId)}`;
   },
@@ -37,7 +49,7 @@ export const routes = {
   portalMeetingEdit(juntoSlug: string, meetingId: string): `/portal/${string}` {
     return `/portal/${encodeURIComponent(juntoSlug)}/meetings/${encodeURIComponent(meetingId)}/edit`;
   },
-  essay(essaySlug: string): string {
+  essay(essaySlug: string): `/essays/${string}` {
     return `/essays/${encodeURIComponent(essaySlug)}`;
   },
 } as const;

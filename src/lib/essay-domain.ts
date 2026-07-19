@@ -164,7 +164,10 @@ const essayDraftFormSchema = z.object({
 export type EssayDraftInput = z.infer<typeof essayDraftFormSchema>;
 
 export type EssayFormErrorKey =
-  "title-required" | "field-too-long" | "meeting-invalid";
+  | "title-required"
+  | "field-too-long"
+  | "meeting-invalid"
+  | "visibility-invalid";
 
 export type ParsedEssayDraftForm =
   | { ok: true; input: EssayDraftInput }
@@ -193,6 +196,46 @@ export function parseEssayDraftForm(formData: FormData): ParsedEssayDraftForm {
         ? "title-required"
         : "field-too-long";
   return { ok: false, errorKey };
+}
+
+export interface EssayWorkspaceInput {
+  draft: EssayDraftInput;
+  visibility: EssayVisibility;
+}
+
+export type ParsedEssayWorkspaceForm =
+  | { ok: true; input: EssayWorkspaceInput }
+  | { ok: false; errorKey: EssayFormErrorKey };
+
+// The workspace keeps visibility explicit while leaving the lower-level
+// draft seam focused on content. Missing or invented visibility values fail
+// closed at the action boundary.
+export function parseEssayWorkspaceForm(
+  formData: FormData,
+): ParsedEssayWorkspaceForm {
+  const draft = parseEssayDraftForm(formData);
+  if (!draft.ok) {
+    return draft;
+  }
+  const visibility = essayVisibilitySchema.safeParse(
+    formData.get("visibility"),
+  );
+  if (!visibility.success) {
+    return { ok: false, errorKey: "visibility-invalid" };
+  }
+  return {
+    ok: true,
+    input: { draft: draft.input, visibility: visibility.data },
+  };
+}
+
+// Native checkboxes submit their value only when checked. Literal `on` is
+// the sole UI proof of confirmation; omitted, false-like, or forged values
+// all become false before reaching transitionEssay.
+export function hasExplicitPublicExposureConfirmation(
+  formData: FormData,
+): boolean {
+  return formData.get("confirm-public-exposure") === "on";
 }
 
 // ---------------------------------------------------------------------------

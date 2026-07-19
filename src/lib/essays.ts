@@ -106,6 +106,31 @@ export async function getJuntoEssay(
   return data ? essayFromRow(essayRowSchema.parse(data)) : null;
 }
 
+// Author-workspace lookup. The author filter is part of the query rather
+// than a presentation-layer check, so another author's row is the same
+// uniform miss as an absent or cross-Junto id even for a Junto admin.
+export async function getOwnJuntoEssay(
+  supabase: SupabaseServerClient,
+  juntoId: string,
+  authorId: string,
+  essayId: string,
+): Promise<Essay | null> {
+  if (!uuidSchema.safeParse(essayId).success) {
+    return null;
+  }
+  const { data, error } = await supabase
+    .from("essays")
+    .select(ESSAY_COLUMNS)
+    .eq("id", essayId)
+    .eq("junto_id", juntoId)
+    .eq("author_id", authorId)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`Essay lookup failed (${error.code ?? "?"})`);
+  }
+  return data ? essayFromRow(essayRowSchema.parse(data)) : null;
+}
+
 // ---------------------------------------------------------------------------
 // Draft creation and content updates
 // ---------------------------------------------------------------------------
