@@ -19,7 +19,7 @@ export class EnvValidationError extends Error {
   }
 }
 
-const juntoSlug = z
+export const juntoSlugSchema = z
   .string()
   .regex(
     /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
@@ -31,7 +31,7 @@ const siteEnvSchema = z.object({
   // Route seam for docs/implementation: `/` serves the explicitly configured
   // initial chapter without hard-coding a single-Junto data assumption
   // (.dev/runs/core-product/implementation.md, "Decisions and boundaries").
-  JUNTO_INITIAL_JUNTO_SLUG: juntoSlug,
+  JUNTO_INITIAL_JUNTO_SLUG: juntoSlugSchema,
 });
 
 // The service-role key is deliberately NOT part of the application

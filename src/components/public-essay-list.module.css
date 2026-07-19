@@ -58,6 +58,12 @@
 }
 
 @media (max-width: 640px) {
+  .title {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
   .row {
     grid-template-columns: 1fr;
     gap: var(--space-sm);

@@ -22,4 +22,29 @@ describe("public application boundary", () => {
       expect(source, path).toContain("createSupabaseAnonClient");
     }
   });
+
+  it("rejects non-configured meeting routes before opening an anonymous data path", () => {
+    const path =
+      "src/app/(public)/juntos/[juntoSlug]/meetings/[meetingDate]/page.tsx";
+    const source = readFileSync(resolve(path), "utf8");
+    const juntoValidation = source.indexOf(
+      "juntoSlugSchema.safeParse(juntoSlug)",
+    );
+    const dateValidation = source.indexOf(
+      "meetingDateSchema.safeParse(meetingDate)",
+    );
+    const routeGuard = source.indexOf("juntoSlug !== site.initialJuntoSlug");
+    const clientCreation = source.indexOf("createSupabaseAnonClient()");
+
+    expect(juntoValidation, "Junto slug validation").toBeGreaterThan(-1);
+    expect(dateValidation, "meeting date validation").toBeGreaterThan(-1);
+    expect(routeGuard, "configured-Junto route guard").toBeGreaterThan(-1);
+    expect(clientCreation, "anonymous client creation").toBeGreaterThan(-1);
+    for (const boundary of [juntoValidation, dateValidation, routeGuard]) {
+      expect(
+        boundary,
+        "route boundary must precede client creation",
+      ).toBeLessThan(clientCreation);
+    }
+  });
 });

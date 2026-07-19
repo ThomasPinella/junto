@@ -1,8 +1,11 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import {
+  ESSAY_AUTHOR_EMAIL,
+  JUNTO_E,
   JUNTO_P,
   MEETING_C_PRIVATE,
+  MEETING_E_UPCOMING,
   MEETING_P_COMPLETED,
   MEETING_P_UPCOMING,
   MEETING_Q_INACTIVE,
@@ -29,6 +32,10 @@ let featureId: string;
 const FEATURE_SLUG = "the-discipline-of-noticing";
 const MAYA_SECOND_SLUG = "what-we-keep-in-common";
 const DANIEL_SLUG = "a-duty-to-future-neighbors";
+const ELM_ESSAY_SLUG = "elm-public-scope-trap";
+const ELM_ESSAY_TITLE = "Elm's Public Scope Trap";
+const ELM_BODY_MARKER = "C20 Elm public body must remain absent";
+const ELM_AUTHOR_MARKER = "c10-t05-author";
 const DRAFT_MARKER = "C17 draft words must remain absent";
 const MEMBERS_MARKER = "C17 members-only words must remain absent";
 
@@ -48,13 +55,16 @@ async function sessionAccessToken(): Promise<string> {
   return session.access_token;
 }
 
-async function signIn(email: string): Promise<string> {
+async function signIn(
+  email: string,
+  juntoSlug: string = JUNTO_P.slug,
+): Promise<string> {
   await clearMailbox();
   await page.goto("/portal/sign-in");
   await page.getByLabel("Email address").fill(email);
   await page.getByRole("button", { name: "Email me a sign-in link" }).click();
   await page.goto(await latestAuthLinkFor(email));
-  await expect(page).toHaveURL(`/portal/${JUNTO_P.slug}`);
+  await expect(page).toHaveURL(`/portal/${juntoSlug}`);
   const token = await sessionAccessToken();
   await page.getByRole("button", { name: "Sign out" }).click();
   return token;
@@ -68,6 +78,7 @@ async function createEssay(
     subtitle?: string;
     body: string;
     meetingId: string;
+    juntoId?: string;
     visibility?: "public" | "members_only";
     publish?: boolean;
   },
@@ -76,7 +87,7 @@ async function createEssay(
     method: "POST",
     prefer: "return=representation",
     body: {
-      junto_id: JUNTO_P.id,
+      junto_id: input.juntoId ?? JUNTO_P.id,
       meeting_id: input.meetingId,
       title: input.title,
       slug: input.slug,
@@ -125,6 +136,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
   page = await context.newPage();
   mayaToken = await signIn(PUBLIC_AUTHOR_A_EMAIL);
   danielToken = await signIn(PUBLIC_AUTHOR_B_EMAIL);
+  const elmToken = await signIn(ESSAY_AUTHOR_EMAIL, JUNTO_E.slug);
 
   featureId = await createEssay(mayaToken, {
     slug: FEATURE_SLUG,
@@ -151,6 +163,14 @@ test.beforeAll(async ({ browser }, testInfo) => {
     title: "A Duty to Future Neighbors",
     meetingId: MEETING_P_UPCOMING.id,
     body: "Public obligation extends beyond the people we already know.",
+    publish: true,
+  });
+  await createEssay(elmToken, {
+    slug: ELM_ESSAY_SLUG,
+    title: ELM_ESSAY_TITLE,
+    meetingId: MEETING_E_UPCOMING.id,
+    juntoId: JUNTO_E.id,
+    body: ELM_BODY_MARKER,
     publish: true,
   });
   await createEssay(mayaToken, {
@@ -185,6 +205,24 @@ test("homepage leads with a meeting and reaches a recent essay", async ({}, test
   await expect(
     page.getByRole("link", { name: "The Discipline of Noticing" }).first(),
   ).toBeVisible();
+  if (testInfo.project.use.isMobile) {
+    for (const [label, anchor] of [
+      [
+        "masthead wordmark",
+        page.getByRole("link", { name: "JUNTO", exact: true }),
+      ],
+      [
+        "public essay title",
+        page.getByRole("link", { name: "The Discipline of Noticing" }).first(),
+      ],
+    ] as const) {
+      await expect(anchor, `${label} should be visible`).toBeVisible();
+      const height = await anchor.evaluate(
+        (element) => element.getBoundingClientRect().height,
+      );
+      expect.soft(height, label).toBeGreaterThanOrEqual(44);
+    }
+  }
   await page.screenshot({
     path: `/tmp/c17-home-${testInfo.project.name}.png`,
     fullPage: true,
@@ -200,7 +238,42 @@ test("homepage leads with a meeting and reaches a recent essay", async ({}, test
   await expectNoOverflow();
 });
 
+test("a non-configured public Junto meeting is a generic metadata-safe miss", async () => {
+  const baselineResponse = await page.goto(
+    `/juntos/${JUNTO_P.slug}/meetings/2031-12-31`,
+  );
+  expect(baselineResponse?.status()).toBe(404);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Page not found" }),
+  ).toBeVisible();
+  const baselineTitle = await page.title();
+
+  const response = await page.goto(
+    `/juntos/${JUNTO_E.slug}/meetings/${MEETING_E_UPCOMING.date}`,
+  );
+  expect(response?.status()).toBe(404);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Page not found" }),
+  ).toBeVisible();
+  expect(await page.title()).toBe(baselineTitle);
+  expect(await page.title()).toBe("Meeting · Junto");
+
+  const source = await page.content();
+  for (const marker of [
+    JUNTO_E.name,
+    MEETING_E_UPCOMING.title!,
+    MEETING_E_UPCOMING.theme!,
+    MEETING_E_UPCOMING.description!,
+    ELM_ESSAY_TITLE,
+    ELM_BODY_MARKER,
+    ELM_AUTHOR_MARKER,
+  ]) {
+    expect(source).not.toContain(marker);
+  }
+});
+
 test("reading page renders long-form semantics and related public work", async ({}, testInfo) => {
+  await page.goto(`/essays/${FEATURE_SLUG}`);
   const article = page.locator("article");
   await expect(
     article.getByRole("heading", { level: 2, name: "A claim" }),

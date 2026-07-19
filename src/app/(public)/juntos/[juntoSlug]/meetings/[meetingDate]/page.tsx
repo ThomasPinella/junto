@@ -5,6 +5,8 @@ import { cache } from "react";
 
 import { PublicEssayList } from "@/components/public-essay-list";
 import { routes } from "@/config/routes";
+import { siteConfig } from "@/config/site";
+import { juntoSlugSchema } from "@/lib/env";
 import { listPublicEssays, publicReadSignal } from "@/lib/essays";
 
 import {
@@ -33,17 +35,22 @@ interface PublicMeetingRecord {
 }
 
 // The canonical public meeting page (docs/content/meetings.md):
-// /juntos/[juntoSlug]/meetings/[meetingDate]. Every miss — private Junto,
-// inactive Junto, nonexistent Junto, absent or malformed date, or a
-// momentary archive failure — resolves to the SAME not-found, and reads use
-// a cookie-free anon client against the safe projection only, so nothing
+// /juntos/[juntoSlug]/meetings/[meetingDate]. Every miss — non-configured,
+// private, inactive, or nonexistent Junto; absent or malformed date; or a
+// momentary archive failure — resolves to the SAME not-found, and reads use a
+// cookie-free anon client against the safe projection only, so nothing
 // distinguishes "private" from "never existed".
 const loadRecord = cache(
   async (
     juntoSlug: string,
     meetingDate: string,
   ): Promise<PublicMeetingRecord | null> => {
-    if (!meetingDateSchema.safeParse(meetingDate).success) {
+    const site = siteConfig();
+    if (
+      !juntoSlugSchema.safeParse(juntoSlug).success ||
+      !meetingDateSchema.safeParse(meetingDate).success ||
+      juntoSlug !== site.initialJuntoSlug
+    ) {
       return null;
     }
     try {
