@@ -50,7 +50,8 @@ export const JUNTO_C = {
 } as const;
 // T04: the public-archive chapter. Its slug is the live server's configured
 // initial Junto, so `/meetings` serves its safe public meeting record. It
-// deliberately has NO members or invitations.
+// has public-author invitations; T08 makes one an administrator so its
+// complete loop can create another invitation through the real UI.
 export const JUNTO_P = {
   id: "c0700000-0000-4a00-8a00-000000000a04",
   slug: "t04-poplar",

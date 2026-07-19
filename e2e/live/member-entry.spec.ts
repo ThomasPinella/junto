@@ -16,6 +16,7 @@ import {
   resetFixtures,
   verifyFixturesAbsent,
 } from "./fixtures";
+import { runExhaustiveLiveTeardown } from "./exhaustive-teardown";
 
 // These journeys drive the REAL local Supabase Auth (GoTrue), PostgREST, and
 // Mailpit stack through the production-built application: invitation-gated
@@ -29,7 +30,7 @@ import {
 // fixtures, so the full journey is proven on both form factors.
 test.describe.configure({ mode: "serial" });
 
-let context: BrowserContext;
+let context: BrowserContext | null = null;
 let page: Page;
 let isMobile: boolean;
 let appOrigin: string;
@@ -67,24 +68,13 @@ test.beforeAll(async ({ browser }, testInfo) => {
 });
 
 test.afterAll(async () => {
-  await context.close();
-  // Teardown always runs as two separately aggregated operations: absence
-  // verification still executes when cleanup fails, and either failure alone
-  // fails the run without masking the other.
-  const teardownErrors: string[] = [];
-  try {
-    await cleanupFixtures();
-  } catch (err) {
-    teardownErrors.push(err instanceof Error ? err.message : String(err));
-  }
-  try {
-    await verifyFixturesAbsent();
-  } catch (err) {
-    teardownErrors.push(err instanceof Error ? err.message : String(err));
-  }
-  if (teardownErrors.length > 0) {
-    throw new Error(`teardown failed — ${teardownErrors.join("; ")}`);
-  }
+  await runExhaustiveLiveTeardown({
+    closeBrowserContext: async () => {
+      if (context) await context.close();
+    },
+    cleanupFixtures,
+    verifyFixturesAbsent,
+  });
 });
 
 test("unauthenticated portal access is denied without leaking chapter data", async () => {

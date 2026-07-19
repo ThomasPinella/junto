@@ -22,6 +22,7 @@ import {
   restAsUser,
   verifyFixturesAbsent,
 } from "./fixtures";
+import { runExhaustiveLiveTeardown } from "./exhaustive-teardown";
 
 // T04 meetings journeys against the real local Supabase stack through the
 // production build: the safe public meeting archive, uniform non-disclosure
@@ -35,7 +36,7 @@ import {
 // serial mode, one shared page whose real session cookies persist.
 test.describe.configure({ mode: "serial" });
 
-let context: BrowserContext;
+let context: BrowserContext | null = null;
 let page: Page;
 let isMobile: boolean;
 
@@ -81,6 +82,7 @@ async function expectSafePublicBody(page: Page): Promise<void> {
 // user's own credential — exactly what PostgREST authorizes — never a
 // service key and never injected state.
 async function memberAccessToken(): Promise<string> {
+  if (!context) throw new Error("browser context is unavailable");
   const cookies = await context.cookies();
   const parts = cookies
     .filter((cookie) => /^sb-.*-auth-token(\.\d+)?$/.test(cookie.name))
@@ -116,21 +118,13 @@ test.beforeAll(async ({ browser }, testInfo) => {
 });
 
 test.afterAll(async () => {
-  await context.close();
-  const teardownErrors: string[] = [];
-  try {
-    await cleanupFixtures();
-  } catch (err) {
-    teardownErrors.push(err instanceof Error ? err.message : String(err));
-  }
-  try {
-    await verifyFixturesAbsent();
-  } catch (err) {
-    teardownErrors.push(err instanceof Error ? err.message : String(err));
-  }
-  if (teardownErrors.length > 0) {
-    throw new Error(`teardown failed — ${teardownErrors.join("; ")}`);
-  }
+  await runExhaustiveLiveTeardown({
+    closeBrowserContext: async () => {
+      if (context) await context.close();
+    },
+    cleanupFixtures,
+    verifyFixturesAbsent,
+  });
 });
 
 test("the public archive lists the public chapter's record with honest statuses and safe fields", async () => {

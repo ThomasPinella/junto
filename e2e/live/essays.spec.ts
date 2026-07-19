@@ -20,6 +20,7 @@ import {
   restAsUser,
   verifyFixturesAbsent,
 } from "./fixtures";
+import { runExhaustiveLiveTeardown } from "./exhaustive-teardown";
 
 // T05 essay journeys against the real local Supabase stack: draft creation
 // with database-derived authorship and same-Junto meeting integrity, draft
@@ -35,7 +36,7 @@ import {
 // service role and never fabricated auth state.
 test.describe.configure({ mode: "serial" });
 
-let context: BrowserContext;
+let context: BrowserContext | null = null;
 let page: Page;
 
 let authorToken: string;
@@ -60,6 +61,7 @@ const UUID_SHAPE =
 // The signed-in user's real Supabase session access token, read from the
 // browser context's auth cookies (possibly chunked and base64-prefixed).
 async function sessionAccessToken(): Promise<string> {
+  if (!context) throw new Error("browser context is unavailable");
   const cookies = await context.cookies();
   const parts = cookies
     .filter((cookie) => /^sb-.*-auth-token(\.\d+)?$/.test(cookie.name))
@@ -116,21 +118,13 @@ test.beforeAll(async ({ browser }, testInfo) => {
 });
 
 test.afterAll(async () => {
-  await context.close();
-  const teardownErrors: string[] = [];
-  try {
-    await cleanupFixtures();
-  } catch (err) {
-    teardownErrors.push(err instanceof Error ? err.message : String(err));
-  }
-  try {
-    await verifyFixturesAbsent();
-  } catch (err) {
-    teardownErrors.push(err instanceof Error ? err.message : String(err));
-  }
-  if (teardownErrors.length > 0) {
-    throw new Error(`teardown failed — ${teardownErrors.join("; ")}`);
-  }
+  await runExhaustiveLiveTeardown({
+    closeBrowserContext: async () => {
+      if (context) await context.close();
+    },
+    cleanupFixtures,
+    verifyFixturesAbsent,
+  });
 });
 
 test("the essay author activates their invitation through the real mailbox", async () => {
