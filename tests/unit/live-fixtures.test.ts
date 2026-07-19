@@ -69,7 +69,9 @@ function route(spec: RouteSpec, method: string, url: URL): StubResponse {
   if (/^\/auth\/v1\/admin\/users\/[^/]+$/.test(path) && method === "DELETE") {
     return spec.allowDeletes ? { status: 200, body: null } : unexpected();
   }
-  if (/^\/rest\/v1\/(junto_members|junto_invitations|juntos)$/.test(path)) {
+  if (
+    /^\/rest\/v1\/(meetings|junto_members|junto_invitations|juntos)$/.test(path)
+  ) {
     if (method === "GET") return { status: 200, body: spec.restRows ?? [] };
     if (method === "DELETE" && spec.allowDeletes) {
       return { status: 204, body: undefined };
@@ -399,8 +401,9 @@ describe("cleanupFixtures (shared listing helper fails closed)", () => {
     expect(message).toMatch(/malformed response body/);
     expectCredentialFree(caught);
     // The malformed listing must not short-circuit later fixture classes:
-    // juntos deletion and the Mailpit clear still ran.
+    // meeting/junto deletion and the Mailpit clear still ran.
     const observed = calls.map((c) => `${c.method} ${c.url.pathname}`);
+    expect(observed).toContain("DELETE /rest/v1/meetings");
     expect(observed).toContain("DELETE /rest/v1/juntos");
     expect(observed).toContain("DELETE /api/v1/messages");
   });

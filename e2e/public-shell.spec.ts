@@ -119,6 +119,24 @@ test.describe("public publication shell", () => {
     }
   });
 
+  test("public meeting URLs miss uniformly when no record is servable", async ({
+    page,
+  }) => {
+    // Stack-free baseline: with no database reachable, every public meeting
+    // detail request — plausible or malformed — must resolve to the same
+    // non-disclosing not-found rather than an error or a leak.
+    for (const path of [
+      "/juntos/philadelphia/meetings/2026-01-01",
+      "/juntos/no-such-junto/meetings/2026-01-01",
+      "/juntos/philadelphia/meetings/not-a-date",
+    ]) {
+      await page.goto(path);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Page not found" }),
+      ).toBeVisible();
+    }
+  });
+
   test("honors prefers-reduced-motion", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");

@@ -64,9 +64,12 @@ forwarded off the loopback stack, with no override.
 
 ## Layout
 
-- `src/app` — App Router routes: public publication shells, the private
-  member portal (`/portal`, `/portal/[juntoSlug]`), and the Supabase Auth
-  callback (`/auth/callback`)
+- `src/app` — App Router routes: public publication shells, the public
+  meeting archive (`/meetings` and the canonical
+  `/juntos/[juntoSlug]/meetings/[meetingDate]` record pages, served from the
+  safe `public_meetings` projection), the private member portal (`/portal`,
+  `/portal/[juntoSlug]`, including the meeting program and Junto-scoped
+  meeting administration), and the Supabase Auth callback (`/auth/callback`)
 - `src/proxy.ts` — refreshes Supabase Auth cookies for private routes
   (never an authorization decision; protected server code re-checks the
   user and live active membership through RLS on every request)

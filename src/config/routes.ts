@@ -14,8 +14,28 @@ export const routes = {
   junto(juntoSlug: string): string {
     return `/juntos/${encodeURIComponent(juntoSlug)}`;
   },
+  // The documented public meeting URL shape (docs/content/meetings.md):
+  // /juntos/san-diego/meetings/2026-06-22
+  publicMeeting(
+    juntoSlug: string,
+    meetingDate: string,
+  ): `/juntos/${string}/meetings/${string}` {
+    return `/juntos/${encodeURIComponent(juntoSlug)}/meetings/${encodeURIComponent(meetingDate)}`;
+  },
   portalJunto(juntoSlug: string): `/portal/${string}` {
     return `/portal/${encodeURIComponent(juntoSlug)}`;
+  },
+  portalMeetings(juntoSlug: string): `/portal/${string}` {
+    return `/portal/${encodeURIComponent(juntoSlug)}/meetings`;
+  },
+  portalMeeting(juntoSlug: string, meetingId: string): `/portal/${string}` {
+    return `/portal/${encodeURIComponent(juntoSlug)}/meetings/${encodeURIComponent(meetingId)}`;
+  },
+  portalMeetingNew(juntoSlug: string): `/portal/${string}` {
+    return `/portal/${encodeURIComponent(juntoSlug)}/meetings/new`;
+  },
+  portalMeetingEdit(juntoSlug: string, meetingId: string): `/portal/${string}` {
+    return `/portal/${encodeURIComponent(juntoSlug)}/meetings/${encodeURIComponent(meetingId)}/edit`;
   },
   essay(essaySlug: string): string {
     return `/essays/${encodeURIComponent(essaySlug)}`;

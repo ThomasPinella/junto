@@ -22,6 +22,13 @@ const SERVICE_ROLE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ??
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
 
+// The public demo anon key: used by the T04 journeys to prove RLS denials at
+// the PostgREST layer with a real member session token (never the service
+// role, and never any fabricated auth state).
+export const ANON_KEY =
+  process.env.SUPABASE_ANON_KEY ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
+
 // Fixed, test-scoped identifiers so setup and teardown are unambiguous.
 // Distinct from the T02 harness fixtures (c0300000-…).
 export const JUNTO_A = {
@@ -41,13 +48,130 @@ export const JUNTO_C = {
   slug: "t03-cedar",
   name: "T03 Cedar",
 } as const;
+// T04: the public-archive chapter. Its slug is the live server's configured
+// initial Junto, so `/meetings` serves its safe public meeting record. It
+// deliberately has NO members or invitations.
+export const JUNTO_P = {
+  id: "c0700000-0000-4a00-8a00-000000000a04",
+  slug: "t04-poplar",
+  name: "T04 Poplar",
+} as const;
+// T04: flagged public but INACTIVE — its meetings must never be publicly
+// visible, indistinguishable from a nonexistent chapter.
+export const JUNTO_Q = {
+  id: "c0700000-0000-4a00-8a00-000000000a05",
+  slug: "t04-quince",
+  name: "T04 Quince",
+} as const;
 
 export const MEMBER_EMAIL = "c07-t03-member@example.com";
 export const UNINVITED_EMAIL = "c07-t03-uninvited@example.com";
 
-const FIXTURE_JUNTOS = [JUNTO_A, JUNTO_B, JUNTO_C] as const;
+const FIXTURE_JUNTOS = [JUNTO_A, JUNTO_B, JUNTO_C, JUNTO_P, JUNTO_Q] as const;
 const FIXTURE_JUNTO_IDS = FIXTURE_JUNTOS.map((j) => j.id);
 const FIXTURE_EMAILS = [MEMBER_EMAIL, UNINVITED_EMAIL] as const;
+
+function isoDateFromToday(offsetDays: number): string {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+}
+
+// Marker strings that MUST NEVER appear in any public response. They are
+// planted in the private columns of publicly listed meetings so a leak is
+// directly observable.
+export const PRIVATE_LOCATION_MARKER = "Fern Street carriage house";
+export const PRIVATE_DEADLINE_MARKER_ISO = `${isoDateFromToday(18)}T18:00:00+00:00`;
+
+export interface FixtureMeeting {
+  id: string;
+  juntoId: string;
+  date: string;
+  title: string | null;
+  theme: string | null;
+  description: string | null;
+  location: string | null;
+  essayDeadline: string | null;
+  status: "upcoming" | "completed" | "cancelled" | "archived";
+}
+
+// Poplar's public history spans every lifecycle status; Cedar's and Quince's
+// meetings exist only to prove they never surface publicly.
+export const MEETING_P_UPCOMING: FixtureMeeting = {
+  id: "c0700000-0000-4a00-8a00-00000000b001",
+  juntoId: JUNTO_P.id,
+  date: isoDateFromToday(21),
+  title: "The century ahead",
+  theme: "Continuity",
+  description: "Essays on what the chapter owes its future readers.",
+  location: PRIVATE_LOCATION_MARKER,
+  essayDeadline: PRIVATE_DEADLINE_MARKER_ISO,
+  status: "upcoming",
+};
+export const MEETING_P_COMPLETED: FixtureMeeting = {
+  id: "c0700000-0000-4a00-8a00-00000000b002",
+  juntoId: JUNTO_P.id,
+  date: isoDateFromToday(-40),
+  title: "On beginnings",
+  theme: "Origins",
+  description: "The essays read at the chapter's first public table.",
+  location: PRIVATE_LOCATION_MARKER,
+  essayDeadline: `${isoDateFromToday(-43)}T18:00:00+00:00`,
+  status: "completed",
+};
+export const MEETING_P_CANCELLED: FixtureMeeting = {
+  id: "c0700000-0000-4a00-8a00-00000000b003",
+  juntoId: JUNTO_P.id,
+  date: isoDateFromToday(7),
+  title: "Postponed evening",
+  theme: null,
+  description: "Called off for the storm.",
+  location: PRIVATE_LOCATION_MARKER,
+  essayDeadline: null,
+  status: "cancelled",
+};
+export const MEETING_P_ARCHIVED: FixtureMeeting = {
+  id: "c0700000-0000-4a00-8a00-00000000b004",
+  juntoId: JUNTO_P.id,
+  date: isoDateFromToday(-100),
+  title: "The founding table",
+  theme: "Beginnings",
+  description: "The founding record, archived but never deleted.",
+  location: PRIVATE_LOCATION_MARKER,
+  essayDeadline: null,
+  status: "archived",
+};
+export const MEETING_C_PRIVATE: FixtureMeeting = {
+  id: "c0700000-0000-4a00-8a00-00000000b005",
+  juntoId: JUNTO_C.id,
+  date: isoDateFromToday(-5),
+  title: "Cedar private gathering",
+  theme: null,
+  description: "A private chapter's meeting.",
+  location: PRIVATE_LOCATION_MARKER,
+  essayDeadline: null,
+  status: "completed",
+};
+export const MEETING_Q_INACTIVE: FixtureMeeting = {
+  id: "c0700000-0000-4a00-8a00-00000000b006",
+  juntoId: JUNTO_Q.id,
+  date: isoDateFromToday(-30),
+  title: "Quince farewell",
+  theme: null,
+  description: "The inactive chapter's final meeting.",
+  location: PRIVATE_LOCATION_MARKER,
+  essayDeadline: null,
+  status: "completed",
+};
+
+const FIXTURE_MEETINGS = [
+  MEETING_P_UPCOMING,
+  MEETING_P_COMPLETED,
+  MEETING_P_CANCELLED,
+  MEETING_P_ARCHIVED,
+  MEETING_C_PRIVATE,
+  MEETING_Q_INACTIVE,
+] as const;
 
 interface RestResult {
   status: number;
@@ -68,6 +192,40 @@ async function restFetch(
   const headers: Record<string, string> = {
     apikey: SERVICE_ROLE_KEY,
     Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+    "Content-Type": "application/json",
+  };
+  if (prefer) headers.Prefer = prefer;
+  const res = await guardedRequest("SUPABASE_URL", `${SUPABASE_URL}${path}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await res.text();
+  let json: unknown = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+  return { status: res.status, json, text };
+}
+
+// PostgREST as a REAL authenticated member: the anon api key plus the
+// member's own session access token — exactly what the application's RLS
+// boundary faces. Used to prove denials at the API layer without any UI in
+// between; it carries no service-role credentials.
+export async function restAsUser(
+  accessToken: string,
+  path: string,
+  {
+    method = "GET",
+    body,
+    prefer,
+  }: { method?: string; body?: unknown; prefer?: string } = {},
+): Promise<RestResult> {
+  const headers: Record<string, string> = {
+    apikey: ANON_KEY,
+    Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/json",
   };
   if (prefer) headers.Prefer = prefer;
@@ -301,17 +459,54 @@ async function seed(): Promise<void> {
   const juntos = await restFetch("/rest/v1/juntos", {
     method: "POST",
     prefer: "return=minimal",
-    body: FIXTURE_JUNTOS.map((junto) => ({
-      id: junto.id,
-      name: junto.name,
-      slug: junto.slug,
-      status: "active",
+    body: [
       // Portal fixtures stay off the public archive surface entirely.
-      archive_visibility: "private",
-    })),
+      ...[JUNTO_A, JUNTO_B, JUNTO_C].map((junto) => ({
+        id: junto.id,
+        name: junto.name,
+        slug: junto.slug,
+        status: "active",
+        archive_visibility: "private",
+      })),
+      // The public-archive chapter (memberless) and the inactive trap.
+      {
+        id: JUNTO_P.id,
+        name: JUNTO_P.name,
+        slug: JUNTO_P.slug,
+        status: "active",
+        archive_visibility: "public",
+      },
+      {
+        id: JUNTO_Q.id,
+        name: JUNTO_Q.name,
+        slug: JUNTO_Q.slug,
+        status: "inactive",
+        archive_visibility: "public",
+      },
+    ],
   });
   if (juntos.status >= 300) {
     throw new Error(`Failed to seed juntos: ${juntos.status} ${juntos.text}`);
+  }
+  const meetings = await restFetch("/rest/v1/meetings", {
+    method: "POST",
+    prefer: "return=minimal",
+    body: FIXTURE_MEETINGS.map((meeting) => ({
+      id: meeting.id,
+      junto_id: meeting.juntoId,
+      meeting_date: meeting.date,
+      title: meeting.title,
+      theme: meeting.theme,
+      description: meeting.description,
+      location: meeting.location,
+      essay_deadline: meeting.essayDeadline,
+      status: meeting.status,
+    })),
+  });
+  if (meetings.status >= 300) {
+    throw new Error(
+      `Failed to seed meetings: ${meetings.status} ${meetings.text}`,
+    );
   }
   const invites = await restFetch("/rest/v1/junto_invitations", {
     method: "POST",
@@ -366,6 +561,11 @@ export async function cleanupFixtures(): Promise<void> {
   };
   const idFilter = `in.(${FIXTURE_JUNTO_IDS.join(",")})`;
 
+  // Meetings first: they reference the fixture juntos, and this also removes
+  // meetings the journeys created through the UI (matched by junto).
+  await attempt("delete meetings", () =>
+    checkedDelete(`/rest/v1/meetings?junto_id=${idFilter}`),
+  );
   await attempt("delete junto_members", () =>
     checkedDelete(`/rest/v1/junto_members?junto_id=${idFilter}`),
   );
@@ -442,6 +642,12 @@ export async function verifyFixturesAbsent(): Promise<void> {
       residues.push(`${label} (${res.json.length} row(s))`);
     }
   };
+  await check(() =>
+    expectEmptyRest(
+      "meetings",
+      `/rest/v1/meetings?junto_id=${idFilter}&select=id`,
+    ),
+  );
   await check(() =>
     expectEmptyRest(
       "junto_members",

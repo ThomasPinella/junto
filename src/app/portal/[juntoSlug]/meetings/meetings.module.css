@@ -1,0 +1,261 @@
+/* Meeting program surfaces: composed agenda lists, program-record detail,
+   and calm admin forms — typographic hierarchy and fine rules, never cards
+   or calendar grids (docs/design/surface-guidelines.md §7, §9). */
+
+.programList {
+  display: grid;
+  gap: 0;
+  margin-top: var(--space-lg);
+  padding: 0;
+  list-style: none;
+  max-width: var(--measure-reading);
+}
+
+.programRow {
+  padding-block: var(--space-md);
+  border-top: 1px solid var(--color-rule);
+}
+
+.programRow:last-child {
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.programDate {
+  font-family: var(--font-sans);
+  font-size: var(--label-size);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.programLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.programLink:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.programStatus {
+  margin-left: var(--space-md);
+  font-family: var(--font-sans);
+  font-size: var(--label-size);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.programStatusQuiet {
+  composes: programStatus;
+  color: var(--color-muted);
+}
+
+/* Meeting detail: a program record. */
+
+.record {
+  display: grid;
+  gap: var(--space-md);
+  max-width: var(--measure-reading);
+  margin-top: var(--space-lg);
+}
+
+.recordDescription {
+  font-size: var(--body-lg-size);
+  line-height: 1.7;
+}
+
+.detailList {
+  display: grid;
+  gap: var(--space-sm) var(--space-lg);
+  grid-template-columns: max-content 1fr;
+  margin: var(--space-md) 0 0;
+}
+
+.detailList dt {
+  font-family: var(--font-sans);
+  font-size: var(--label-size);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--color-muted);
+  padding-block: 2px;
+}
+
+.detailList dd {
+  margin: 0;
+}
+
+/* Admin forms: calm, direct, lightly framed (DESIGN.md, "Forms and editor"). */
+
+.form {
+  display: grid;
+  gap: var(--space-lg);
+  max-width: 34rem;
+  margin-top: var(--space-xl);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.fieldLabel {
+  font-family: var(--font-sans);
+  font-size: var(--label-size);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+.fieldHint {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  color: var(--color-muted);
+}
+
+.input {
+  min-height: 44px;
+  padding: 10px var(--space-md);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-control);
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.input:hover {
+  border-color: var(--color-muted);
+}
+
+.textarea {
+  composes: input;
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.submit {
+  justify-self: start;
+  min-height: 44px;
+  padding: 10px var(--space-lg);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-control);
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 450;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.submit:hover {
+  background-color: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+/* Quiet secondary controls: status transitions and navigation actions. */
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.quietButton {
+  min-height: 44px;
+  padding: 10px var(--space-lg);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-control);
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 450;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+
+.quietButton:hover {
+  border-color: var(--color-muted);
+}
+
+.actionLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px var(--space-lg);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-control);
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 450;
+  line-height: 1.4;
+  text-decoration: none;
+  transition: background-color 120ms ease;
+}
+
+.actionLink:hover {
+  background-color: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  color: var(--color-accent-contrast);
+}
+
+.quietLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  color: var(--color-ink);
+}
+
+.quietLink:hover {
+  color: var(--color-accent-hover);
+}
+
+/* The deliberate archive control. */
+
+.archiveConfirm {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  max-width: var(--measure-reading);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.archiveCheckbox {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  margin-top: 2px;
+  accent-color: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .submit,
+  .quietButton,
+  .actionLink,
+  .programLink {
+    transition-duration: 0.001s;
+  }
+}

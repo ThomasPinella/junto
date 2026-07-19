@@ -47,6 +47,10 @@ export default defineConfig({
       // The configured site URL must match where this server actually
       // listens; Auth email links redirect back through it.
       NEXT_PUBLIC_SITE_URL: baseURL,
+      // The live public archive serves the T04 public fixture chapter, so
+      // the `/meetings` journeys exercise the real safe projection. The T03
+      // portal fixtures stay private and separate.
+      JUNTO_INITIAL_JUNTO_SLUG: "t04-poplar",
     },
   },
 });

@@ -25,3 +25,76 @@
   font-size: var(--body-lg-size);
   line-height: 1.7;
 }
+
+/* Public meeting archive: text-led editorial rows — a proceedings index,
+   not an event-card grid (docs/design/surface-guidelines.md §4). */
+
+.archiveList {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  list-style: none;
+  max-width: var(--measure-reading);
+}
+
+.archiveRow {
+  padding-block: var(--space-md);
+  border-top: 1px solid var(--color-rule);
+}
+
+.archiveRow:last-child {
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.metaLabel {
+  font-family: var(--font-sans);
+  font-size: var(--label-size);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.archiveLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.archiveLink:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.archiveStatus {
+  margin-left: var(--space-md);
+  font-family: var(--font-sans);
+  font-size: var(--label-size);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.recordBody {
+  display: grid;
+  gap: var(--space-lg);
+  max-width: var(--measure-reading);
+  margin-top: var(--space-lg);
+  font-size: var(--body-lg-size);
+  line-height: 1.7;
+}
+
+.statusNote {
+  max-width: var(--measure-reading);
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  background-color: var(--color-surface);
+  border-left: 2px solid var(--color-rule);
+}

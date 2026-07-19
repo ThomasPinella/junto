@@ -69,3 +69,16 @@ export async function requireJuntoMembership(
   }
   return { ...context, membership };
 }
+
+// Admin authority is the SELECTED membership's own live role on this
+// request — an admin of another Junto is an ordinary member here and is
+// turned away to the chapter home (docs/membership/user-roles.md §2).
+export async function requireJuntoAdmin(
+  juntoSlug: string,
+): Promise<JuntoPortalContext> {
+  const context = await requireJuntoMembership(juntoSlug);
+  if (context.membership.role !== "admin") {
+    redirect(routes.portalJunto(context.membership.juntoSlug));
+  }
+  return context;
+}

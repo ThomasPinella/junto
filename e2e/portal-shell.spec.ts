@@ -20,6 +20,10 @@ test.describe("member portal entry (unauthenticated baseline)", () => {
       "/portal/philadelphia",
       "/portal/philadelphia/members",
       "/portal/philadelphia/admin",
+      "/portal/philadelphia/meetings",
+      "/portal/philadelphia/meetings/new",
+      "/portal/philadelphia/meetings/00000000-0000-4000-a000-000000000001",
+      "/portal/philadelphia/meetings/00000000-0000-4000-a000-000000000001/edit",
     ]) {
       await page.goto(path);
       await expect(page).toHaveURL(/\/portal\/sign-in/);
