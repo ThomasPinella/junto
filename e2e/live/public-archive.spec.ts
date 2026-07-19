@@ -16,10 +16,11 @@ import {
   restAsUser,
   verifyFixturesAbsent,
 } from "./fixtures";
+import { runExhaustiveLiveTeardown } from "./exhaustive-teardown";
 
 test.describe.configure({ mode: "serial" });
 
-let context: BrowserContext;
+let context: BrowserContext | undefined;
 let page: Page;
 let mayaToken: string;
 let danielToken: string;
@@ -32,6 +33,7 @@ const DRAFT_MARKER = "C17 draft words must remain absent";
 const MEMBERS_MARKER = "C17 members-only words must remain absent";
 
 async function sessionAccessToken(): Promise<string> {
+  if (!context) throw new Error("browser context unavailable");
   const cookies = await context.cookies();
   const parts = cookies
     .filter((cookie) => /^sb-.*-auth-token(\.\d+)?$/.test(cookie.name))
@@ -168,19 +170,11 @@ test.beforeAll(async ({ browser }, testInfo) => {
 });
 
 test.afterAll(async () => {
-  await context.close();
-  const errors: string[] = [];
-  try {
-    await cleanupFixtures();
-  } catch (error) {
-    errors.push(String(error));
-  }
-  try {
-    await verifyFixturesAbsent();
-  } catch (error) {
-    errors.push(String(error));
-  }
-  if (errors.length) throw new Error(`teardown failed — ${errors.join("; ")}`);
+  await runExhaustiveLiveTeardown({
+    closeBrowserContext: async () => context?.close(),
+    cleanupFixtures,
+    verifyFixturesAbsent,
+  });
 });
 
 test("homepage leads with a meeting and reaches a recent essay", async ({}, testInfo) => {
