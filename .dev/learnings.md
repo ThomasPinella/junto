@@ -15,3 +15,15 @@ Add only verified, non-obvious knowledge likely to prevent repeated mistakes acr
 - Parameterized public detail routes must enforce the configured publication scope independently; projection-level public eligibility does not establish that a record belongs to the publication currently being served.
 
 - For mobile target-size regressions, assert the rendered bounding box of the actual shared anchor under a real mobile device profile. CSS declarations and font line height alone do not prove an accessible hit area.
+
+- A detached wrapper's exit does not establish process-tree exit: retain the original POSIX process-group ID and apply bounded TERM/KILL to the group independently of direct-child state.
+
+- Exhaustive phase orchestration is truthful only when independent work inside each phase also settles exhaustively before that phase rejects.
+
+- Deployment-readiness URL validation should constrain protocols to HTTP(S) while still permitting loopback HTTP for local verification; syntactic absolute-URL validity alone is insufficient.
+
+- A clean-archive proof should assert that its working directory is inside the extracted candidate before the first install or build; creating an archive alone does not prove subsequent commands ran against it.
+
+- A teardown correction is cumulatively complete only after every live spec is enumerated and every teardown owner is shown to use the shared exhaustive phase boundary; reviewing only new journeys can leave older specs with the same cleanup-skipping defect.
+
+- Strict parser safety fixtures must use production-valid identifiers, and parsed projections must retain every field consumed downstream. Otherwise mocks can force a lax validator or make assertions pass on `undefined`; genuine API responses remain the authority for omitted-versus-null field semantics.

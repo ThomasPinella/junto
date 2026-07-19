@@ -112,7 +112,7 @@ The run should prove the product's central loop and its hardest invariant: priva
 - Depends on: T02, T03, T04, T05, T06, T07
 - Outcome: The repository can be reset locally and exercise the complete invitation → membership → meeting → writing → publication → public-reading loop while maintaining two-Junto isolation. Railway configuration is documented and stateless without performing a deployment.
 - Proof: From a clean local reset, migrations, seeds, database tests, lint, typecheck, unit/integration tests, critical Playwright journeys, and production build all pass; focused adversarial checks verify denied cross-Junto access, deactivation, visibility revocation, metadata/sitemap behavior, and cache-safe private responses.
-- Status: ready; corrected T07 is integrated and R21 approved unblocking.
+- Status: complete; final reviewed core-product integrated at `8149895f66c532a6165ef7719e811b751ac7bf82`. R26 accepted cumulative T08, R32 closed the final run-level harness/document findings with verdict `clean`, and V28/V33 found the release candidate safe to hand off. No deployment, hosted migration, bootstrap, push, or primary-branch merge was performed.
 
 ## Deferred and unresolved
 
