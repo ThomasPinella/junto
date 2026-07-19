@@ -7,7 +7,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(73);
+select plan(95);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures: Philadelphia (public, active) with author alice, co-member bob,
@@ -374,6 +374,67 @@ select throws_ok(
   'confirmation'
 );
 
+-- Only literal boolean TRUE is confirmation. SQL three-valued logic makes
+-- `NOT NULL` evaluate to NULL, so an explicit NULL — exactly what a JSON
+-- `null` through PostgREST becomes — must fail closed like FALSE and
+-- omitted, never fall open.
+select set_config('junto.bob_published_at',
+  (select published_at::text from public.essays
+    where slug = 'bobs-first-essay'), true);
+select throws_ok(
+  $$select * from public.transition_essay(
+      (select id from public.essays where slug = 'bobs-first-essay'),
+      'published', 'public', false)$$,
+  'P0001', 'confirmation-required',
+  '35a. an explicit FALSE confirmation is rejected for the author'
+);
+select throws_ok(
+  $$select * from public.transition_essay(
+      (select id from public.essays where slug = 'bobs-first-essay'),
+      'published', 'public', null)$$,
+  'P0001', 'confirmation-required',
+  '35b. an explicit NULL confirmation never satisfies the public-exposure ' ||
+  'confirmation'
+);
+select ok(
+  (select status = 'published' and visibility = 'members_only'
+      and published_at::text = current_setting('junto.bob_published_at', true)
+     from public.essays
+    where slug = 'bobs-first-essay'),
+  '35c. the rejected NULL/FALSE attempts left status, visibility, and the ' ||
+  'publication timestamp unchanged'
+);
+select is(
+  (select count(*)::int from public.public_essays
+    where slug = 'bobs-first-essay'),
+  0,
+  '35d. no public projection row appeared after the rejected attempts'
+);
+
+-- NULL vocabulary is rejected deliberately as invalid input rather than
+-- letting three-valued comparisons fall through into later constraints.
+select throws_ok(
+  $$select * from public.transition_essay(
+      (select id from public.essays where slug = 'bobs-first-essay'),
+      null, 'members_only')$$,
+  '22023', 'invalid-status',
+  '35e. a NULL status is rejected as deliberate invalid input'
+);
+select throws_ok(
+  $$select * from public.transition_essay(
+      (select id from public.essays where slug = 'bobs-first-essay'),
+      'published', null)$$,
+  '22023', 'invalid-visibility',
+  '35f. a NULL visibility is rejected as deliberate invalid input'
+);
+select ok(
+  (select status = 'published' and visibility = 'members_only'
+      and published_at::text = current_setting('junto.bob_published_at', true)
+     from public.essays
+    where slug = 'bobs-first-essay'),
+  '35g. the rejected NULL-vocabulary calls left the row state unchanged'
+);
+
 -- ---------------------------------------------------------------------------
 -- 36–40: the author's full lifecycle — confirmed exposure, immediate
 -- revocation, unpublish, and the blank-body guard
@@ -470,6 +531,31 @@ select is(
     where id = '00000000-0000-4000-c000-000000000001'),
   'on-patience',
   '45. a title edit never alters the established slug'
+);
+
+-- The NULL-confirmation guard from the author's own draft: a rejected
+-- attempt leaves the draft a draft, with no publication timestamp and no
+-- public trace.
+select throws_ok(
+  $$select * from public.transition_essay(
+      '00000000-0000-4000-c000-000000000001', 'published', 'public', null)$$,
+  'P0001', 'confirmation-required',
+  '45a. an explicit NULL confirmation cannot publish the author''s draft ' ||
+  'publicly'
+);
+select ok(
+  (select status = 'draft' and visibility = 'members_only'
+      and published_at is null
+     from public.essays
+    where id = '00000000-0000-4000-c000-000000000001'),
+  '45b. the draft remains an unpublished members-only draft after the ' ||
+  'rejected NULL attempt'
+);
+select is(
+  (select count(*)::int from public.public_essays
+    where slug = 'on-patience'),
+  0,
+  '45c. the rejected NULL attempt left no public projection row'
 );
 
 select lives_ok(
@@ -593,6 +679,67 @@ select throws_ok(
   '59. even the admin needs explicit confirmation to expose an essay ' ||
   'publicly'
 );
+
+-- Confirmation is not weakened for admins: the non-author same-Junto admin
+-- also needs literal TRUE — NULL and FALSE fail closed and leave the
+-- unpublished draft untouched.
+select throws_ok(
+  $$select * from public.transition_essay(
+      '00000000-0000-4000-c000-000000000009', 'published', 'public', null)$$,
+  'P0001', 'confirmation-required',
+  '59a. an explicit NULL confirmation is rejected for the non-author admin'
+);
+select throws_ok(
+  $$select * from public.transition_essay(
+      '00000000-0000-4000-c000-000000000009', 'published', 'public', false)$$,
+  'P0001', 'confirmation-required',
+  '59b. an explicit FALSE confirmation is rejected for the non-author admin'
+);
+select ok(
+  (select status = 'draft' and visibility = 'members_only'
+      and published_at is null
+     from public.essays
+    where id = '00000000-0000-4000-c000-000000000009'),
+  '59c. the rejected admin attempts left the essay an unpublished ' ||
+  'members-only draft with no publication timestamp'
+);
+select is(
+  (select count(*)::int from public.public_essays
+    where slug = 'under-moderation'),
+  0,
+  '59d. no public projection row appeared after the rejected admin attempts'
+);
+select throws_ok(
+  $$select * from public.transition_essay(
+      '00000000-0000-4000-c000-000000000009', null, 'members_only')$$,
+  '22023', 'invalid-status',
+  '59e. a NULL status is rejected as invalid input for the admin too'
+);
+select throws_ok(
+  $$select * from public.transition_essay(
+      '00000000-0000-4000-c000-000000000009', 'published', null)$$,
+  '22023', 'invalid-visibility',
+  '59f. a NULL visibility is rejected as invalid input for the admin too'
+);
+select ok(
+  (select status = 'draft' and visibility = 'members_only'
+      and published_at is null
+     from public.essays
+    where id = '00000000-0000-4000-c000-000000000009'),
+  '59g. the rejected NULL-vocabulary calls left the draft unchanged'
+);
+select lives_ok(
+  $$select * from public.transition_essay(
+      '00000000-0000-4000-c000-000000000009', 'published', 'public', true)$$,
+  '59h. literal TRUE remains the one accepted confirmation for the admin'
+);
+select is(
+  (select count(*)::int from public.public_essays
+    where slug = 'under-moderation'),
+  1,
+  '59i. the admin''s confirmed exposure appears in the projection ' ||
+  'immediately'
+);
 select lives_ok(
   $$select * from public.transition_essay(
       '00000000-0000-4000-c000-000000000009', 'published', 'members_only')$$,
@@ -678,6 +825,30 @@ select throws_ok(
   '42501', null,
   '68. a nonexistent essay id denies identically to an unauthorized one — ' ||
   'the transition path discloses nothing'
+);
+
+-- The deliberate NULL-vocabulary rejection is row-independent: the same
+-- exact error for an existing and a nonexistent essay, so invalid input
+-- leaks no row existence to unauthorized callers either.
+select throws_ok(
+  $$select * from public.transition_essay(
+      '00000000-0000-4000-c000-000000000002', null, 'members_only')$$,
+  '22023', 'invalid-status',
+  '68a. an outsider''s NULL status on an existing essay rejects as ' ||
+  'invalid input'
+);
+select throws_ok(
+  $$select * from public.transition_essay(
+      '00000000-0000-4000-c000-000000000099', null, 'members_only')$$,
+  '22023', 'invalid-status',
+  '68b. a NULL status on a nonexistent essay rejects with the identical ' ||
+  'error — no existence disclosure'
+);
+select throws_ok(
+  $$select * from public.transition_essay(
+      null, 'draft', 'members_only')$$,
+  '42501', null,
+  '68c. a NULL essay id denies uniformly like any other miss'
 );
 
 reset role;

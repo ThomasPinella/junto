@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import {
+  ESSAY_ADMIN_EMAIL,
   ESSAY_AUTHOR_EMAIL,
   ESSAY_COMEMBER_EMAIL,
   JUNTO_A,
@@ -39,7 +40,12 @@ let page: Page;
 
 let authorToken: string;
 let comemberToken: string;
+let adminToken: string;
 let otherJuntoToken: string;
+
+// Captured at publication so the rejected-confirmation journeys can prove
+// the timestamp never moved.
+let publishedAtBefore: string;
 
 const DRAFT_SLUG = "the-weight-of-attention";
 const LASTING_SLUG = "a-lasting-record";
@@ -133,6 +139,12 @@ test("the essay author activates their invitation through the real mailbox", asy
     page.getByRole("heading", { level: 1, name: JUNTO_E.name }),
   ).toBeVisible();
   authorToken = await sessionAccessToken();
+  await signOut(JUNTO_E.slug);
+});
+
+test("the non-author Junto admin activates their invitation through the real mailbox", async () => {
+  await signInThroughMailbox(ESSAY_ADMIN_EMAIL, `/portal/${JUNTO_E.slug}`);
+  adminToken = await sessionAccessToken();
   await signOut(JUNTO_E.slug);
 });
 
@@ -279,6 +291,7 @@ test("publishing members-only reaches the Junto and nobody else", async () => {
   expect(rows[0]?.status).toBe("published");
   expect(rows[0]?.visibility).toBe("members_only");
   expect(typeof rows[0]?.published_at).toBe("string");
+  publishedAtBefore = String(rows[0]?.published_at);
 
   // The same-Junto member reads it on the very next request.
   const memberRead = await restAsUser(
@@ -325,6 +338,132 @@ test("members-only to public fails closed without explicit confirmation", async 
     `/rest/v1/public_essays?slug=eq.${DRAFT_SLUG}`,
   );
   expect(stillHidden.json).toEqual([]);
+});
+
+test("explicit JSON null never satisfies the author's public-exposure confirmation", async () => {
+  // SQL three-valued logic makes `NOT NULL` evaluate to NULL, so only
+  // literal boolean true may count as confirmation — an explicit JSON null
+  // through the real RPC must fail closed exactly like false and omitted.
+  for (const confirm of [null, false]) {
+    const attempt = await restAsUser(
+      authorToken,
+      "/rest/v1/rpc/transition_essay",
+      {
+        method: "POST",
+        body: {
+          target_essay_id: draftId,
+          new_status: "published",
+          new_visibility: "public",
+          confirm_public_exposure: confirm,
+        },
+      },
+    );
+    expect(attempt.status, `confirm=${String(confirm)}`).toBe(400);
+    const error = attempt.json as Record<string, unknown>;
+    expect(error.message, `confirm=${String(confirm)}`).toBe(
+      "confirmation-required",
+    );
+  }
+
+  // The essay is unchanged — still members-only, timestamp untouched.
+  const authorRead = await restAsUser(
+    authorToken,
+    `/rest/v1/essays?id=eq.${draftId}&select=status,visibility,published_at`,
+  );
+  expect(authorRead.json).toEqual([
+    {
+      status: "published",
+      visibility: "members_only",
+      published_at: publishedAtBefore,
+    },
+  ]);
+
+  // And the anonymous internet still sees nothing.
+  const anonRead = await restAsAnon(
+    `/rest/v1/public_essays?slug=eq.${DRAFT_SLUG}`,
+  );
+  expect(anonRead.status).toBe(200);
+  expect(anonRead.json).toEqual([]);
+});
+
+test("null status or visibility is rejected as deliberate invalid input", async () => {
+  for (const body of [
+    {
+      target_essay_id: draftId,
+      new_status: null,
+      new_visibility: "members_only",
+    },
+    { target_essay_id: draftId, new_status: "published", new_visibility: null },
+  ]) {
+    const attempt = await restAsUser(
+      authorToken,
+      "/rest/v1/rpc/transition_essay",
+      { method: "POST", body },
+    );
+    expect(attempt.status, JSON.stringify(body)).toBe(400);
+    const error = attempt.json as Record<string, unknown>;
+    expect(
+      ["invalid-status", "invalid-visibility"],
+      JSON.stringify(body),
+    ).toContain(error.message);
+  }
+
+  const authorRead = await restAsUser(
+    authorToken,
+    `/rest/v1/essays?id=eq.${draftId}&select=status,visibility,published_at`,
+  );
+  expect(authorRead.json).toEqual([
+    {
+      status: "published",
+      visibility: "members_only",
+      published_at: publishedAtBefore,
+    },
+  ]);
+});
+
+test("the non-author admin's null confirmation is rejected identically", async () => {
+  // Confirmation is not weakened for admins: the same-Junto admin holds
+  // transition authority over the member's essay, but JSON null and false
+  // are never confirmation for them either.
+  for (const confirm of [null, false]) {
+    const attempt = await restAsUser(
+      adminToken,
+      "/rest/v1/rpc/transition_essay",
+      {
+        method: "POST",
+        body: {
+          target_essay_id: draftId,
+          new_status: "published",
+          new_visibility: "public",
+          confirm_public_exposure: confirm,
+        },
+      },
+    );
+    expect(attempt.status, `confirm=${String(confirm)}`).toBe(400);
+    const error = attempt.json as Record<string, unknown>;
+    expect(error.message, `confirm=${String(confirm)}`).toBe(
+      "confirmation-required",
+    );
+  }
+
+  // The admin's own read proves the essay never left members-only.
+  const adminRead = await restAsUser(
+    adminToken,
+    `/rest/v1/essays?id=eq.${draftId}&select=status,visibility,published_at`,
+  );
+  expect(adminRead.json).toEqual([
+    {
+      status: "published",
+      visibility: "members_only",
+      published_at: publishedAtBefore,
+    },
+  ]);
+
+  const anonRead = await restAsAnon(
+    `/rest/v1/public_essays?slug=eq.${DRAFT_SLUG}`,
+  );
+  expect(anonRead.status).toBe(200);
+  expect(anonRead.json).toEqual([]);
 });
 
 test("the confirmed transition serves exactly the safe public projection", async () => {

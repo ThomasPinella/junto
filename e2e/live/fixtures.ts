@@ -80,6 +80,9 @@ export const UNINVITED_EMAIL = "c07-t03-uninvited@example.com";
 // T03 member so the private-Junto entry assertions stay exactly as proven.
 export const ESSAY_AUTHOR_EMAIL = "c10-t05-author@example.com";
 export const ESSAY_COMEMBER_EMAIL = "c10-t05-comember@example.com";
+// T05: a real NON-AUTHOR same-Junto admin, proving the publication
+// transition's explicit-confirmation boundary is not weakened for admins.
+export const ESSAY_ADMIN_EMAIL = "c11-t05-admin@example.com";
 
 const FIXTURE_JUNTOS = [
   JUNTO_A,
@@ -95,6 +98,7 @@ const FIXTURE_EMAILS = [
   UNINVITED_EMAIL,
   ESSAY_AUTHOR_EMAIL,
   ESSAY_COMEMBER_EMAIL,
+  ESSAY_ADMIN_EMAIL,
 ] as const;
 
 function isoDateFromToday(offsetDays: number): string {
@@ -610,6 +614,14 @@ async function seed(): Promise<void> {
         junto_id: JUNTO_E.id,
         email_normalized: ESSAY_COMEMBER_EMAIL,
         role: "member",
+        status: "pending",
+      },
+      // C11: the non-author Elm admin for the transition-confirmation
+      // journeys.
+      {
+        junto_id: JUNTO_E.id,
+        email_normalized: ESSAY_ADMIN_EMAIL,
+        role: "admin",
         status: "pending",
       },
     ],
