@@ -5,6 +5,7 @@ import {
   ESSAY_COMEMBER_EMAIL,
   JUNTO_E,
   MEETING_E_UPCOMING,
+  MEETING_P_UPCOMING,
   cleanupFixtures,
   clearMailbox,
   deactivateMembership,
@@ -14,13 +15,14 @@ import {
   restAsUser,
   verifyFixturesAbsent,
 } from "./fixtures";
+import { runExhaustiveLiveTeardown } from "./exhaustive-teardown";
 
 // T06 author workspace through the real application, GoTrue mailbox auth,
 // PostgREST, and transition RPC. Fixture setup alone is privileged; every
 // essay action below is performed by the member's real browser session.
 test.describe.configure({ mode: "serial" });
 
-let context: BrowserContext;
+let context: BrowserContext | null = null;
 let page: Page;
 let authorToken: string;
 let essayId: string;
@@ -38,6 +40,7 @@ async function signIn(email: string, landing: string): Promise<void> {
 }
 
 async function accessToken(): Promise<string> {
+  if (!context) throw new Error("browser context is unavailable");
   const cookies = await context.cookies();
   const raw = decodeURIComponent(
     cookies
@@ -62,6 +65,16 @@ async function signOut(): Promise<void> {
   await expect(page).toHaveURL(/\/portal\/sign-in/);
 }
 
+async function expectDashboardPublicUrl(visible: boolean): Promise<void> {
+  await page.goto(`/portal/${JUNTO_E.slug}/essays`);
+  const publicUrl = page.getByText(`Public URL: /essays/${stableSlug}`);
+  if (visible) {
+    await expect(publicUrl).toBeVisible();
+  } else {
+    await expect(publicUrl).toHaveCount(0);
+  }
+}
+
 test.beforeAll(async ({ browser }, testInfo) => {
   await resetFixtures();
   const use = testInfo.project.use;
@@ -77,19 +90,13 @@ test.beforeAll(async ({ browser }, testInfo) => {
 });
 
 test.afterAll(async () => {
-  await context.close();
-  const errors: string[] = [];
-  try {
-    await cleanupFixtures();
-  } catch (error) {
-    errors.push(error instanceof Error ? error.message : String(error));
-  }
-  try {
-    await verifyFixturesAbsent();
-  } catch (error) {
-    errors.push(error instanceof Error ? error.message : String(error));
-  }
-  if (errors.length) throw new Error(`teardown failed — ${errors.join("; ")}`);
+  await runExhaustiveLiveTeardown({
+    closeBrowserContext: async () => {
+      if (context) await context.close();
+    },
+    cleanupFixtures,
+    verifyFixturesAbsent,
+  });
 });
 
 test("author creates, saves, reloads, edits, and previews a meeting essay", async () => {
@@ -164,6 +171,7 @@ test("author creates, saves, reloads, edits, and previews a meeting essay", asyn
       visibility: "members_only",
     },
   ]);
+  await expectDashboardPublicUrl(false);
 });
 
 test("members-only publish, public confirmation, revocation, and unpublish are immediate", async () => {
@@ -174,6 +182,8 @@ test("members-only publish, public confirmation, revocation, and unpublish are i
   expect(
     (await restAsAnon(`/rest/v1/public_essays?slug=eq.${stableSlug}`)).json,
   ).toEqual([]);
+  await expectDashboardPublicUrl(false);
+  await page.goto(editUrl);
 
   await page.getByRole("radio", { name: /Public/ }).check();
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -191,16 +201,64 @@ test("members-only publish, public confirmation, revocation, and unpublish are i
   expect(
     (await restAsAnon(`/rest/v1/public_essays?slug=eq.${stableSlug}`)).json,
   ).toHaveLength(1);
+  await expectDashboardPublicUrl(true);
+  await page.goto(editUrl);
 
+  const contentBeforeWithdrawal = await restAsUser(
+    authorToken,
+    `/rest/v1/essays?id=eq.${essayId}&select=title,body_markdown,meeting_id`,
+  );
+  const submittedPrivateTitle = "This cross-Junto update must not persist";
+  const submittedPrivateBody =
+    "This newly submitted private body must never become public.";
+  await page
+    .getByRole("textbox", { name: "Title", exact: true })
+    .fill(submittedPrivateTitle);
+  await page.getByLabel("Essay in Markdown").fill(submittedPrivateBody);
+  await page.getByLabel("Meeting").evaluate((element, meetingId) => {
+    const select = element as HTMLSelectElement;
+    const forged = document.createElement("option");
+    forged.value = meetingId;
+    forged.textContent = "Forged cross-Junto meeting";
+    select.append(forged);
+    select.value = meetingId;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  }, MEETING_P_UPCOMING.id);
   await page.getByRole("radio", { name: /Junto members only/ }).check();
   await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(
+    page.getByRole("alert").filter({
+      hasText:
+        "Public access was withdrawn, but your content changes were not saved",
+    }),
+  ).toBeVisible();
   await expect
     .poll(
       async () =>
         (await restAsAnon(`/rest/v1/public_essays?slug=eq.${stableSlug}`)).json,
     )
     .toEqual([]);
+  const contentAfterFailedUpdate = await restAsUser(
+    authorToken,
+    `/rest/v1/essays?id=eq.${essayId}&select=title,body_markdown,meeting_id`,
+  );
+  expect(contentAfterFailedUpdate.json).toEqual(contentBeforeWithdrawal.json);
+  const safelyWithdrawnState = await restAsUser(
+    authorToken,
+    `/rest/v1/essays?id=eq.${essayId}&select=status,visibility`,
+  );
+  expect(safelyWithdrawnState.json).toEqual([
+    { status: "published", visibility: "members_only" },
+  ]);
+  expect(JSON.stringify(contentAfterFailedUpdate.json)).not.toContain(
+    submittedPrivateTitle,
+  );
+  expect(JSON.stringify(contentAfterFailedUpdate.json)).not.toContain(
+    submittedPrivateBody,
+  );
+  await expectDashboardPublicUrl(false);
 
+  await page.goto(editUrl);
   await page.getByRole("radio", { name: /Public/ }).check();
   await page.getByRole("checkbox", { name: /anyone on the internet/i }).check();
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -210,7 +268,9 @@ test("members-only publish, public confirmation, revocation, and unpublish are i
         (await restAsAnon(`/rest/v1/public_essays?slug=eq.${stableSlug}`)).json,
     )
     .toHaveLength(1);
+  await expectDashboardPublicUrl(true);
 
+  await page.goto(editUrl);
   await page.getByRole("button", { name: "Unpublish" }).click();
   await expect(page.getByRole("status")).toContainText("author-only draft");
   await expect
@@ -219,6 +279,7 @@ test("members-only publish, public confirmation, revocation, and unpublish are i
         (await restAsAnon(`/rest/v1/public_essays?slug=eq.${stableSlug}`)).json,
     )
     .toEqual([]);
+  await expectDashboardPublicUrl(false);
 });
 
 test("another author and a deactivated author receive uniform protected denials", async () => {

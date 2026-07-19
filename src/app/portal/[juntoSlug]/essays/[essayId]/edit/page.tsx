@@ -22,11 +22,15 @@ const ERROR_MESSAGES: Record<string, string> = {
   "visibility-invalid": "Choose Public or Junto members only.",
   "essay-incomplete": "Add a meeting and essay text before publishing.",
   "confirmation-required":
-    "Nothing was made public. Confirm that you intend to expose this essay to the internet, then try again.",
+    "Your content was saved, but nothing was made public. Confirm that you intend to expose this essay to the internet, then try again.",
   "invalid-transition": "That publication change is not available.",
   "not-permitted": "That essay could not be changed.",
   "request-failed":
     "Something went wrong and the essay was not changed. Try again in a moment.",
+  "privacy-withdrawn-content-not-saved":
+    "Public access was withdrawn, but your content changes were not saved. Review the essay and try saving again.",
+  "content-saved-transition-failed":
+    "Your content was saved, but the publication change did not complete. Review the essay's current state before trying again.",
 };
 
 const STATUS_MESSAGES: Record<string, string> = {

@@ -11,7 +11,8 @@ export default function EssayWorkspaceError({ reset }: { reset: () => void }) {
       <p className={styles.label}>Junto members only</p>
       <h1 className={styles.title}>The writing room is unavailable</h1>
       <p className={styles.problem} role="alert">
-        Nothing private has been shown or changed. Try again in a moment.
+        Nothing private has been shown. Check the essay’s current state before
+        trying again.
       </p>
       <button className={essayStyles.quietButton} onClick={reset} type="button">
         Try again

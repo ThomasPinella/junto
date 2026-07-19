@@ -100,17 +100,13 @@ export async function publishNewEssay(
   );
 }
 
-async function updateFromForm(
+async function updateExistingEssay(
   juntoSlug: string,
   essayId: string,
   formData: FormData,
-): Promise<{
-  juntoSlug: string;
-  essayId: string;
-  currentStatus: "draft" | "published";
-  visibility: EssayVisibility;
-  confirmPublic: boolean;
-}> {
+  targetStatus: "current" | "published",
+  success: string,
+): Promise<never> {
   const { supabase, membership, userId } =
     await requireJuntoMembership(juntoSlug);
   const editUrl = routes.portalEssayEdit(membership.juntoSlug, essayId);
@@ -127,6 +123,37 @@ async function updateFromForm(
   if (!parsed.ok) {
     redirect(`${editUrl}?error=${parsed.errorKey}`);
   }
+
+  const target = {
+    status: targetStatus === "current" ? essay.status : targetStatus,
+    visibility: parsed.input.visibility,
+  } as const;
+  const withdrawsPublicVisibility =
+    essay.status === "published" &&
+    essay.visibility === "public" &&
+    target.visibility === "members_only";
+
+  // Withdrawal is the privacy boundary: revoke anonymous visibility before
+  // attempting to persist content that the author now considers private.
+  if (withdrawsPublicVisibility) {
+    const withdrawn = await transitionEssay(supabase, essay.id, target, false);
+    if (!withdrawn.ok) {
+      redirect(`${editUrl}?error=${withdrawn.errorKey}`);
+    }
+    const updated = await updateEssayContent(
+      supabase,
+      membership.juntoId,
+      essay.id,
+      parsed.input.draft,
+    );
+    if (!updated.ok) {
+      redirect(`${editUrl}?error=privacy-withdrawn-content-not-saved`);
+    }
+    redirect(`${editUrl}?status=${encodeURIComponent(success)}`);
+  }
+
+  // Every path that could expose an essay remains content-first. A failed
+  // content write therefore cannot make submitted text publicly observable.
   const updated = await updateEssayContent(
     supabase,
     membership.juntoId,
@@ -136,13 +163,19 @@ async function updateFromForm(
   if (!updated.ok) {
     redirect(`${editUrl}?error=${updated.errorKey}`);
   }
-  return {
-    juntoSlug: membership.juntoSlug,
-    essayId: essay.id,
-    currentStatus: essay.status,
-    visibility: parsed.input.visibility,
-    confirmPublic: hasExplicitPublicExposureConfirmation(formData),
-  };
+  const transitioned = await transitionEssay(
+    supabase,
+    essay.id,
+    target,
+    hasExplicitPublicExposureConfirmation(formData),
+  );
+  if (!transitioned.ok) {
+    if (transitioned.errorKey === "confirmation-required") {
+      redirect(`${editUrl}?error=confirmation-required`);
+    }
+    redirect(`${editUrl}?error=content-saved-transition-failed`);
+  }
+  redirect(`${editUrl}?status=${encodeURIComponent(success)}`);
 }
 
 export async function saveEssay(
@@ -150,15 +183,7 @@ export async function saveEssay(
   essayId: string,
   formData: FormData,
 ): Promise<void> {
-  const updated = await updateFromForm(juntoSlug, essayId, formData);
-  await transitionOrRedirect(
-    updated.juntoSlug,
-    updated.essayId,
-    updated.currentStatus,
-    updated.visibility,
-    updated.confirmPublic,
-    "saved",
-  );
+  await updateExistingEssay(juntoSlug, essayId, formData, "current", "saved");
 }
 
 export async function publishEssay(
@@ -166,13 +191,11 @@ export async function publishEssay(
   essayId: string,
   formData: FormData,
 ): Promise<void> {
-  const updated = await updateFromForm(juntoSlug, essayId, formData);
-  await transitionOrRedirect(
-    updated.juntoSlug,
-    updated.essayId,
+  await updateExistingEssay(
+    juntoSlug,
+    essayId,
+    formData,
     "published",
-    updated.visibility,
-    updated.confirmPublic,
     "published",
   );
 }
