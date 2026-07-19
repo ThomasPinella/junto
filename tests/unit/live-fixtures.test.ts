@@ -70,7 +70,9 @@ function route(spec: RouteSpec, method: string, url: URL): StubResponse {
     return spec.allowDeletes ? { status: 200, body: null } : unexpected();
   }
   if (
-    /^\/rest\/v1\/(meetings|junto_members|junto_invitations|juntos)$/.test(path)
+    /^\/rest\/v1\/(essays|meetings|junto_members|junto_invitations|juntos)$/.test(
+      path,
+    )
   ) {
     if (method === "GET") return { status: 200, body: spec.restRows ?? [] };
     if (method === "DELETE" && spec.allowDeletes) {
@@ -403,6 +405,7 @@ describe("cleanupFixtures (shared listing helper fails closed)", () => {
     // The malformed listing must not short-circuit later fixture classes:
     // meeting/junto deletion and the Mailpit clear still ran.
     const observed = calls.map((c) => `${c.method} ${c.url.pathname}`);
+    expect(observed).toContain("DELETE /rest/v1/essays");
     expect(observed).toContain("DELETE /rest/v1/meetings");
     expect(observed).toContain("DELETE /rest/v1/juntos");
     expect(observed).toContain("DELETE /api/v1/messages");

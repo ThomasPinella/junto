@@ -64,12 +64,38 @@ export const JUNTO_Q = {
   name: "T04 Quince",
 } as const;
 
+// T05: the essay chapter — active with a PUBLIC archive so confirmed public
+// essays are the only fixture content eligible for the safe public essay
+// projection. Its members are the dedicated essay identities below; the T03
+// private-Junto fixtures stay untouched.
+export const JUNTO_E = {
+  id: "c0700000-0000-4a00-8a00-000000000a06",
+  slug: "t05-elm",
+  name: "T05 Elm",
+} as const;
+
 export const MEMBER_EMAIL = "c07-t03-member@example.com";
 export const UNINVITED_EMAIL = "c07-t03-uninvited@example.com";
+// T05: real mailbox-authenticated essay identities, kept separate from the
+// T03 member so the private-Junto entry assertions stay exactly as proven.
+export const ESSAY_AUTHOR_EMAIL = "c10-t05-author@example.com";
+export const ESSAY_COMEMBER_EMAIL = "c10-t05-comember@example.com";
 
-const FIXTURE_JUNTOS = [JUNTO_A, JUNTO_B, JUNTO_C, JUNTO_P, JUNTO_Q] as const;
+const FIXTURE_JUNTOS = [
+  JUNTO_A,
+  JUNTO_B,
+  JUNTO_C,
+  JUNTO_P,
+  JUNTO_Q,
+  JUNTO_E,
+] as const;
 const FIXTURE_JUNTO_IDS = FIXTURE_JUNTOS.map((j) => j.id);
-const FIXTURE_EMAILS = [MEMBER_EMAIL, UNINVITED_EMAIL] as const;
+const FIXTURE_EMAILS = [
+  MEMBER_EMAIL,
+  UNINVITED_EMAIL,
+  ESSAY_AUTHOR_EMAIL,
+  ESSAY_COMEMBER_EMAIL,
+] as const;
 
 function isoDateFromToday(offsetDays: number): string {
   const date = new Date();
@@ -164,6 +190,21 @@ export const MEETING_Q_INACTIVE: FixtureMeeting = {
   status: "completed",
 };
 
+// T05: the Elm meeting essays attach to. Its private columns carry the same
+// planted markers, so an essay-projection leak of meeting context is
+// directly observable.
+export const MEETING_E_UPCOMING: FixtureMeeting = {
+  id: "c0700000-0000-4a00-8a00-00000000b007",
+  juntoId: JUNTO_E.id,
+  date: isoDateFromToday(14),
+  title: "What the essay owes its reader",
+  theme: "Obligation",
+  description: "The Elm chapter's next table.",
+  location: PRIVATE_LOCATION_MARKER,
+  essayDeadline: PRIVATE_DEADLINE_MARKER_ISO,
+  status: "upcoming",
+};
+
 const FIXTURE_MEETINGS = [
   MEETING_P_UPCOMING,
   MEETING_P_COMPLETED,
@@ -171,6 +212,7 @@ const FIXTURE_MEETINGS = [
   MEETING_P_ARCHIVED,
   MEETING_C_PRIVATE,
   MEETING_Q_INACTIVE,
+  MEETING_E_UPCOMING,
 ] as const;
 
 interface RestResult {
@@ -233,6 +275,31 @@ export async function restAsUser(
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await res.text();
+  let json: unknown = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
+  return { status: res.status, json, text };
+}
+
+// PostgREST as a REAL anonymous visitor: the anon api key alone, exactly
+// what an unauthenticated internet reader presents. Used to prove what the
+// safe public essay projection serves — and withholds — with no session at
+// all.
+export async function restAsAnon(
+  path: string,
+  { method = "GET" }: { method?: string } = {},
+): Promise<RestResult> {
+  const res = await guardedRequest("SUPABASE_URL", `${SUPABASE_URL}${path}`, {
+    method,
+    headers: {
+      apikey: ANON_KEY,
+      Authorization: `Bearer ${ANON_KEY}`,
+    },
   });
   const text = await res.text();
   let json: unknown = null;
@@ -483,6 +550,14 @@ async function seed(): Promise<void> {
         status: "inactive",
         archive_visibility: "public",
       },
+      // T05: the essay chapter with a public archive.
+      {
+        id: JUNTO_E.id,
+        name: JUNTO_E.name,
+        slug: JUNTO_E.slug,
+        status: "active",
+        archive_visibility: "public",
+      },
     ],
   });
   if (juntos.status >= 300) {
@@ -524,6 +599,19 @@ async function seed(): Promise<void> {
         role: "member",
         status: "pending",
       },
+      // T05: the essay author and co-member enter Elm as ordinary members.
+      {
+        junto_id: JUNTO_E.id,
+        email_normalized: ESSAY_AUTHOR_EMAIL,
+        role: "member",
+        status: "pending",
+      },
+      {
+        junto_id: JUNTO_E.id,
+        email_normalized: ESSAY_COMEMBER_EMAIL,
+        role: "member",
+        status: "pending",
+      },
     ],
   });
   if (invites.status >= 300) {
@@ -561,7 +649,13 @@ export async function cleanupFixtures(): Promise<void> {
   };
   const idFilter = `in.(${FIXTURE_JUNTO_IDS.join(",")})`;
 
-  // Meetings first: they reference the fixture juntos, and this also removes
+  // Essays first: they reference meetings, juntos, and auth users (authors
+  // have no cascade), and this also removes essays the journeys created
+  // (matched by junto).
+  await attempt("delete essays", () =>
+    checkedDelete(`/rest/v1/essays?junto_id=${idFilter}`),
+  );
+  // Meetings next: they reference the fixture juntos, and this also removes
   // meetings the journeys created through the UI (matched by junto).
   await attempt("delete meetings", () =>
     checkedDelete(`/rest/v1/meetings?junto_id=${idFilter}`),
@@ -642,6 +736,9 @@ export async function verifyFixturesAbsent(): Promise<void> {
       residues.push(`${label} (${res.json.length} row(s))`);
     }
   };
+  await check(() =>
+    expectEmptyRest("essays", `/rest/v1/essays?junto_id=${idFilter}&select=id`),
+  );
   await check(() =>
     expectEmptyRest(
       "meetings",

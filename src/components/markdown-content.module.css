@@ -1,0 +1,106 @@
+/* Reusable long-form reading typography for rendered essay Markdown
+   (DESIGN.md, "Essays"): serif body at a comfortable measure, restrained
+   headings, designed block quotes, lists, links, and rules. T06 preview and
+   T07 reading pages compose these hooks; page-level layout stays theirs. */
+
+.content {
+  font-family: var(--font-serif);
+  font-size: var(--body-lg-size);
+  line-height: 1.7;
+  max-width: var(--measure-reading);
+  color: var(--color-ink);
+}
+
+.content > * + * {
+  margin-top: var(--space-md);
+}
+
+.content h1,
+.content h2,
+.content h3,
+.content h4,
+.content h5,
+.content h6 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: var(--space-xl);
+}
+
+.content h1 {
+  font-size: 1.6em;
+}
+
+.content h2 {
+  font-size: 1.35em;
+}
+
+.content h3,
+.content h4,
+.content h5,
+.content h6 {
+  font-size: 1.15em;
+}
+
+.content blockquote {
+  margin: var(--space-lg) 0 var(--space-lg) 0;
+  padding-left: var(--space-lg);
+  border-left: 2px solid var(--color-rule);
+  color: var(--color-muted);
+}
+
+.content blockquote > * + * {
+  margin-top: var(--space-sm);
+}
+
+.content ul,
+.content ol {
+  padding-left: var(--space-xl);
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.content hr {
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+  margin: var(--space-xl) auto;
+  max-width: 8ch;
+}
+
+.content a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.content a:hover {
+  color: var(--color-accent-hover);
+}
+
+.content a:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.content code {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", monospace;
+  font-size: 0.85em;
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-subtle);
+  padding: 0 0.3em;
+}
+
+.content pre {
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-subtle);
+  padding: var(--space-md);
+  overflow-x: auto;
+}
+
+.content pre code {
+  border: 0;
+  background: none;
+  padding: 0;
+}
