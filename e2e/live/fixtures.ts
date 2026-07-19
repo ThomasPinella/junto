@@ -86,9 +86,115 @@ async function restFetch(
   return { status: res.status, json, text };
 }
 
-export async function adminUsersByEmail(
-  email: string,
-): Promise<Array<{ id: string; email?: string }>> {
+// Strict nested successful-response parsers. An HTTP 2xx listing whose
+// elements are structurally broken must reject rather than filter to
+// "absent"/"unrelated": cleanup and the independent absence verification
+// share these helpers, so a lax parse could make both falsely agree that no
+// fixture remains. Diagnostics name only the offending index/field — never
+// raw body content, credentials, or headers.
+const UUID_SHAPE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+interface AdminUser {
+  id: string;
+  email: string;
+}
+
+function parseAdminUsers(json: unknown, context: string): AdminUser[] {
+  const malformed = (detail: string) =>
+    new Error(`${context}: malformed response body (${detail})`);
+  if (!isRecord(json) || !Array.isArray(json.users)) {
+    throw malformed('expected a "users" array');
+  }
+  return json.users.map((element, index) => {
+    if (!isRecord(element)) {
+      throw malformed(`users[${index}] is not an object`);
+    }
+    const { id, email } = element;
+    if (typeof id !== "string" || !UUID_SHAPE.test(id)) {
+      throw malformed(`users[${index}].id is not a UUID string`);
+    }
+    if (typeof email !== "string" || email.length === 0) {
+      throw malformed(`users[${index}].email is not a nonempty string`);
+    }
+    return { id, email };
+  });
+}
+
+interface MailpitRecipient {
+  Address: string;
+}
+
+interface MailpitMessageSummary {
+  ID: string;
+  To: MailpitRecipient[];
+}
+
+function parseMailpitMessages(
+  json: unknown,
+  context: string,
+): MailpitMessageSummary[] {
+  const malformed = (detail: string) =>
+    new Error(
+      `Mailpit message listing (${context}): malformed response body (${detail})`,
+    );
+  if (!isRecord(json) || !Array.isArray(json.messages)) {
+    throw malformed('expected a "messages" array');
+  }
+  return json.messages.map((element, index) => {
+    if (!isRecord(element)) {
+      throw malformed(`messages[${index}] is not an object`);
+    }
+    const { ID, To } = element;
+    if (typeof ID !== "string" || ID.length === 0) {
+      throw malformed(`messages[${index}].ID is not a nonempty string`);
+    }
+    if (!Array.isArray(To)) {
+      throw malformed(`messages[${index}].To is not an array`);
+    }
+    const recipients = To.map((recipient, recipientIndex) => {
+      if (
+        !isRecord(recipient) ||
+        typeof recipient.Address !== "string" ||
+        recipient.Address.length === 0
+      ) {
+        throw malformed(
+          `messages[${index}].To[${recipientIndex}].Address is not a ` +
+            `nonempty string`,
+        );
+      }
+      return { Address: recipient.Address };
+    });
+    return { ID, To: recipients };
+  });
+}
+
+interface MailpitMessageDetail {
+  Text: string;
+  HTML: string;
+}
+
+function parseMailpitMessageDetail(json: unknown): MailpitMessageDetail {
+  const malformed = (detail: string) =>
+    new Error(`Mailpit message detail: malformed response body (${detail})`);
+  if (!isRecord(json)) {
+    throw malformed("expected an object");
+  }
+  const { Text, HTML } = json;
+  if (typeof Text !== "string") {
+    throw malformed('"Text" is not a string');
+  }
+  if (typeof HTML !== "string") {
+    throw malformed('"HTML" is not a string');
+  }
+  return { Text, HTML };
+}
+
+export async function adminUsersByEmail(email: string): Promise<AdminUser[]> {
   // The admin filter is a partial match; narrow to exact email in code.
   const res = await guardedRequest(
     "SUPABASE_URL",
@@ -110,28 +216,19 @@ export async function adminUsersByEmail(
   } catch {
     json = null;
   }
-  const users =
-    json && typeof json === "object" && "users" in json
-      ? (json as { users: unknown }).users
-      : null;
-  if (!Array.isArray(users)) {
-    // Fail closed: an HTTP 2xx with a missing/null/non-array `users` value
-    // must not read as "no users" either.
-    throw new Error(
-      `admin user listing for ${email}: malformed response body ` +
-        `(expected a "users" array)`,
-    );
-  }
-  return (users as Array<{ id: string; email?: string }>).filter(
+  // Fail closed: an HTTP 2xx whose body — outer shape or any nested
+  // element — is malformed must not read as "no users" either.
+  return parseAdminUsers(json, `admin user listing for ${email}`).filter(
     (u) => u.email === email,
   );
 }
 
 async function mailpitMessages(
   context: string,
-): Promise<Array<{ ID: string; To?: Array<{ Address: string }> }>> {
-  // An HTTP 2xx without an exact `messages` array fails closed rather than
-  // reading as "no messages".
+): Promise<MailpitMessageSummary[]> {
+  // An HTTP 2xx whose body — outer `messages` array or any nested
+  // message/recipient — is malformed fails closed rather than reading as
+  // "no messages" or "unrelated mail".
   const res = await guardedRequest(
     "MAILPIT_URL",
     `${MAILPIT_URL}/api/v1/messages`,
@@ -145,17 +242,7 @@ async function mailpitMessages(
   } catch {
     json = null;
   }
-  const messages =
-    json && typeof json === "object" && "messages" in json
-      ? (json as { messages: unknown }).messages
-      : null;
-  if (!Array.isArray(messages)) {
-    throw new Error(
-      `Mailpit message listing (${context}): malformed response body ` +
-        `(expected a "messages" array)`,
-    );
-  }
-  return messages as Array<{ ID: string; To?: Array<{ Address: string }> }>;
+  return parseMailpitMessages(json, context);
 }
 
 export async function clearMailbox(): Promise<void> {
@@ -180,23 +267,27 @@ export async function latestAuthLinkFor(
 ): Promise<string> {
   for (let i = 0; i < attempts; i += 1) {
     const messages = await mailpitMessages("verification-email polling");
-    const match = messages.find((m) =>
-      (m.To ?? []).some((t) => t.Address === email),
-    );
+    const match = messages.find((m) => m.To.some((t) => t.Address === email));
     if (match) {
       const msgRes = await guardedRequest(
         "MAILPIT_URL",
-        `${MAILPIT_URL}/api/v1/message/${match.ID}`,
+        `${MAILPIT_URL}/api/v1/message/${encodeURIComponent(match.ID)}`,
       );
       if (!msgRes.ok) {
         throw new Error(`Mailpit message detail: HTTP ${msgRes.status}`);
       }
-      const msg = (await msgRes.json()) as { Text?: string; HTML?: string };
-      const href = (msg.HTML ?? "").match(
-        /href="([^"]*\/auth\/v1\/verify[^"]*)"/,
-      );
+      let detailJson: unknown = null;
+      try {
+        detailJson = await msgRes.json();
+      } catch {
+        detailJson = null;
+      }
+      // A malformed detail 200 rejects here; it must never degrade into
+      // "no link arrived" polling behavior.
+      const msg = parseMailpitMessageDetail(detailJson);
+      const href = msg.HTML.match(/href="([^"]*\/auth\/v1\/verify[^"]*)"/);
       if (href?.[1]) return href[1].replaceAll("&amp;", "&");
-      const plain = (msg.Text ?? "").match(
+      const plain = msg.Text.match(
         /https?:\/\/[^\s<>"')]+\/auth\/v1\/verify[^\s<>"')]*/,
       );
       if (plain?.[0]) return plain[0];
@@ -376,7 +467,7 @@ export async function verifyFixturesAbsent(): Promise<void> {
   await check(async () => {
     const messages = await mailpitMessages("fixture-absence verification");
     const lingering = messages.filter((m) =>
-      (m.To ?? []).some((t) =>
+      m.To.some((t) =>
         (FIXTURE_EMAILS as readonly string[]).includes(t.Address),
       ),
     );
