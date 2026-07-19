@@ -194,6 +194,17 @@ export async function setJuntoMeetingStatus(
 const PUBLIC_MEETING_COLUMNS =
   "junto_slug, meeting_date, title, theme, description, status";
 
+// Public pages serve anonymous visitors per request. When the archive
+// database is unreachable they must fall back to their quiet empty state in
+// bounded time — not ride out the Supabase client's full multi-second retry
+// backoff on every render. The signal caps each public read (first attempt
+// plus one quick retry) while normal reads stay unaffected.
+const PUBLIC_READ_TIMEOUT_MS = 2_500;
+
+function publicReadSignal(): AbortSignal {
+  return AbortSignal.timeout(PUBLIC_READ_TIMEOUT_MS);
+}
+
 export async function listPublicMeetings(
   supabase: SupabaseServerClient,
   juntoSlug: string,
@@ -202,7 +213,8 @@ export async function listPublicMeetings(
     .from("public_meetings")
     .select(PUBLIC_MEETING_COLUMNS)
     .eq("junto_slug", juntoSlug)
-    .order("meeting_date", { ascending: false });
+    .order("meeting_date", { ascending: false })
+    .abortSignal(publicReadSignal());
   if (error) {
     throw new Error(`Public meeting listing failed (${error.code ?? "?"})`);
   }
@@ -222,6 +234,7 @@ export async function getPublicMeetingByDate(
     .select(PUBLIC_MEETING_COLUMNS)
     .eq("junto_slug", juntoSlug)
     .eq("meeting_date", meetingDate)
+    .abortSignal(publicReadSignal())
     .maybeSingle();
   if (error) {
     throw new Error(`Public meeting lookup failed (${error.code ?? "?"})`);
@@ -254,6 +267,7 @@ export async function getPublicJunto(
     .eq("slug", juntoSlug)
     .eq("status", "active")
     .eq("archive_visibility", "public")
+    .abortSignal(publicReadSignal())
     .maybeSingle();
   if (error) {
     throw new Error(`Public junto lookup failed (${error.code ?? "?"})`);
