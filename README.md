@@ -45,9 +45,11 @@ harness's safety guarantees; needs no stack), and `test:db:auth` (a live Auth
 regression that drives the running local GoTrue, PostgREST, and Mailpit
 end to end). The live regression requires the local Supabase stack to be up
 (`pnpm db:start`), seeds and tears down its own fixtures with the local
-service-role key, and refuses to run against any non-loopback Supabase or
-Mailpit endpoint — remote URLs in `SUPABASE_URL`/`MAILPIT_URL` are rejected
-before any request is sent, with no override.
+service-role key, and refuses to touch any non-loopback Supabase or Mailpit
+endpoint: remote URLs in `SUPABASE_URL`/`MAILPIT_URL` are rejected up front,
+every individual request revalidates its target immediately before it is
+sent, and HTTP redirects are always refused — so a request can never be
+forwarded off the loopback stack, with no override.
 
 ## Layout
 
@@ -55,7 +57,9 @@ before any request is sent, with no override.
 - `src/components` — shared presentational components
 - `src/config` — routing and site configuration seams
 - `src/lib` — server utilities (environment validation)
-- `tests/unit`, `e2e`, `supabase/tests` — Vitest, Playwright, and pgTAP tests
+- `tests/unit`, `e2e` — Vitest and Playwright tests
+- `supabase/tests` — pgTAP database tests plus the Node-based live Auth
+  regression harness and its safety self-checks
 
 Canonical routing: chapter pages live under `/juntos/[juntoSlug]`, essay pages
 under `/essays/[essaySlug]`; `/` serves the chapter configured by
