@@ -195,6 +195,11 @@ function normalizedComparisonString(value) {
     : null;
 }
 
+// Match the production live-fixture parser exactly: GoTrue Auth identifiers
+// consumed by filters and privileged delete paths must have UUID shape.
+const UUID_SHAPE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function parseAdminUsers(json, context) {
   const malformed = (detail) =>
     new Error(`${context}: malformed response body (${detail})`);
@@ -205,14 +210,30 @@ function parseAdminUsers(json, context) {
     if (!isRecord(user)) {
       throw malformed(`users[${index}] is not an object`);
     }
-    if (typeof user.id !== "string" || user.id.trim().length === 0) {
-      throw malformed(`users[${index}].id is not a nonempty string`);
+    if (typeof user.id !== "string" || !UUID_SHAPE.test(user.id)) {
+      throw malformed(`users[${index}].id is not a UUID string`);
     }
     const email = normalizedComparisonString(user.email);
     if (email === null) {
       throw malformed(`users[${index}].email is not a nonempty string address`);
     }
-    return { id: user.id, email };
+    // GoTrue omits this property for an unconfirmed user in the admin-list
+    // response. Normalize genuine JSON omission and explicit null to the same
+    // value while retaining a confirmed timestamp exactly. An own property
+    // with undefined is not a JSON response shape and remains invalid.
+    const emailConfirmedAt = Object.hasOwn(user, "email_confirmed_at")
+      ? user.email_confirmed_at
+      : null;
+    if (
+      emailConfirmedAt !== null &&
+      (typeof emailConfirmedAt !== "string" ||
+        emailConfirmedAt.trim().length === 0)
+    ) {
+      throw malformed(
+        `users[${index}].email_confirmed_at is neither null nor a nonempty string`,
+      );
+    }
+    return { id: user.id, email, email_confirmed_at: emailConfirmedAt };
   });
 }
 
@@ -386,10 +407,13 @@ export async function cleanup() {
         // thrown request (rejected fetch), not just an HTTP error response,
         // for one user must not skip the remaining users of this email.
         try {
-          const res = await authFetch(`/auth/v1/admin/users/${user.id}`, {
-            method: "DELETE",
-            token: SERVICE_ROLE_KEY,
-          });
+          const res = await authFetch(
+            `/auth/v1/admin/users/${encodeURIComponent(user.id)}`,
+            {
+              method: "DELETE",
+              token: SERVICE_ROLE_KEY,
+            },
+          );
           if (res.status >= 300) {
             userErrors.push(`HTTP ${res.status} deleting user ${user.id}`);
           }

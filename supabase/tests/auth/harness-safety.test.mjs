@@ -26,6 +26,18 @@ const HARNESS_PATH = fileURLToPath(HARNESS_URL);
 const LOCAL_SUPABASE = "http://127.0.0.1:54321";
 const LOCAL_MAILPIT = "http://127.0.0.1:54324";
 
+// Fixed production-shaped Auth UUIDs. Healthy and failure-simulation stubs
+// must satisfy the same identifier contract as GoTrue so they cannot conceal
+// a parser or privileged delete-path regression.
+const AUTH_USER_IDS = Object.freeze({
+  admin: "c3100000-0000-4a00-8a00-000000000001",
+  member: "c3100000-0000-4a00-8a00-000000000002",
+  adminFirst: "c3100000-0000-4a00-8a00-000000000003",
+  adminSecond: "c3100000-0000-4a00-8a00-000000000004",
+  memberCleanup: "c3100000-0000-4a00-8a00-000000000005",
+  normalized: "c3100000-0000-4a00-8a00-000000000006",
+});
+
 // Fixture identifiers, used to build realistic simulated-stack responses.
 // Read from the harness's FIXTURES export; the fallback (kept in sync with
 // verify-mailbox-ownership.mjs) only lets a RED run against an older harness
@@ -155,7 +167,7 @@ function redirectAttackStub(calls) {
 // request flow cannot pass. Invitation admission is modeled from the seeded
 // invitations (as the before_user_created hook does), not from hardcoded
 // email comparisons, so a missing or wrong invitation seed breaks the flow.
-function simulatedHealthyStack(FIX, calls) {
+function simulatedHealthyStack(FIX, calls, options = {}) {
   const state = {
     juntoSeeded: false,
     invitations: [],
@@ -166,8 +178,8 @@ function simulatedHealthyStack(FIX, calls) {
   const TOKEN = "simtoken123abc";
   const SESSION = "sim-member-session";
   const USER_IDS = {
-    [FIX.invitedAdmin]: "u-admin",
-    [FIX.invitedMember]: "u-member",
+    [FIX.invitedAdmin]: AUTH_USER_IDS.admin,
+    [FIX.invitedMember]: AUTH_USER_IDS.member,
   };
   return async (input, init = {}) => {
     record(calls, input, init);
@@ -242,7 +254,21 @@ function simulatedHealthyStack(FIX, calls) {
       const email = u.searchParams.get("filter");
       if (!email) reject("admin user listing requires a filter");
       return jsonResponse(
-        JSON.stringify({ users: state.users.filter((x) => x.email === email) }),
+        JSON.stringify({
+          users: state.users
+            .filter((x) => x.email === email)
+            .map((x) => {
+              if (x.email !== FIX.invitedAdmin) return x;
+              const unconfirmedUser = { ...x };
+              delete unconfirmedUser.email_confirmed_at;
+              return Object.hasOwn(options, "invitedAdminListingConfirmation")
+                ? {
+                    ...unconfirmedUser,
+                    email_confirmed_at: options.invitedAdminListingConfirmation,
+                  }
+                : unconfirmedUser;
+            }),
+        }),
       );
     }
     if (u.pathname.startsWith("/auth/v1/admin/users/") && method === "DELETE") {
@@ -393,11 +419,21 @@ function expectedHealthyTrace(FIX) {
     ["DELETE", invitationsScoped],
     adminList(FIX.invitedAdmin),
     ...(adminDeletes
-      ? [["DELETE", `${LOCAL_SUPABASE}/auth/v1/admin/users/u-admin`]]
+      ? [
+          [
+            "DELETE",
+            `${LOCAL_SUPABASE}/auth/v1/admin/users/${AUTH_USER_IDS.admin}`,
+          ],
+        ]
       : []),
     adminList(FIX.invitedMember),
     ...(adminDeletes
-      ? [["DELETE", `${LOCAL_SUPABASE}/auth/v1/admin/users/u-member`]]
+      ? [
+          [
+            "DELETE",
+            `${LOCAL_SUPABASE}/auth/v1/admin/users/${AUTH_USER_IDS.member}`,
+          ],
+        ]
       : []),
     adminList(FIX.uninvited),
     ["DELETE", juntoScoped],
@@ -526,6 +562,20 @@ async function withMutedConsole(fn) {
   console.error = () => {};
   try {
     return await fn();
+  } finally {
+    console.log = savedLog;
+    console.error = savedError;
+  }
+}
+
+async function withCapturedConsole(fn) {
+  const savedLog = console.log;
+  const savedError = console.error;
+  const output = [];
+  console.log = (...args) => output.push(args.join(" "));
+  console.error = (...args) => output.push(args.join(" "));
+  try {
+    return { result: await fn(), output };
   } finally {
     console.log = savedLog;
     console.error = savedError;
@@ -943,30 +993,189 @@ async function main() {
   }
 
   const nestedCanary = "C29_NESTED_SECRET_CANARY";
+  const invalidJsonCanary = "C31_INVALID_JSON_SECRET_CANARY";
   const assertSchemaFailure = (err, fieldPattern, label) => {
     ok(
       err !== null &&
         /malformed response body/i.test(err.message) &&
         fieldPattern.test(err.message) &&
         !err.message.includes(nestedCanary) &&
+        !err.message.includes(invalidJsonCanary) &&
         !/eyJ|Bearer|Authorization|apikey/.test(err.message),
       label,
     );
   };
 
+  console.log("\nRaw invalid JSON fails closed without exposing payloads:");
+  {
+    const calls = [];
+    const err = await withStubbedFetch(
+      overlayStub(calls, [
+        {
+          match: "/auth/v1/admin/users?",
+          respond: () => jsonResponse(`{"users":[${invalidJsonCanary}`),
+        },
+      ]),
+      () => rejection(harness.verifyFixturesAbsent()),
+    );
+    assertSchemaFailure(
+      err,
+      /expected a "users" array/i,
+      "raw invalid-JSON Auth listing has a fixed canary-free schema failure",
+    );
+    ok(
+      calls.length === 7 &&
+        calls.filter((call) =>
+          call.url.includes("/auth/v1/admin/users?filter="),
+        ).length === 3 &&
+        calls.at(-1)?.url.endsWith("/api/v1/messages"),
+      "invalid-JSON Auth listing preserves every independent later absence phase",
+    );
+  }
+  {
+    const calls = [];
+    const err = await withStubbedFetch(
+      overlayStub(calls, [
+        {
+          match: "/api/v1/messages",
+          method: "GET",
+          respond: () => jsonResponse(`{"messages":[${invalidJsonCanary}`),
+        },
+      ]),
+      () => rejection(harness.verifyFixturesAbsent()),
+    );
+    assertSchemaFailure(
+      err,
+      /expected a "messages" array/i,
+      "raw invalid-JSON Mailpit listing has a fixed canary-free schema failure",
+    );
+    ok(
+      calls.length === 7 &&
+        calls.filter((call) =>
+          call.url.includes("/auth/v1/admin/users?filter="),
+        ).length === 3 &&
+        calls.at(-1)?.url.endsWith("/api/v1/messages"),
+      "invalid-JSON Mailpit listing runs after every earlier absence phase",
+    );
+  }
+  {
+    const calls = [];
+    const err = await withStubbedFetch(
+      overlayStub(calls, [
+        {
+          match: "/api/v1/messages",
+          method: "GET",
+          respond: () => jsonResponse(`{"messages":[${invalidJsonCanary}`),
+        },
+      ]),
+      () =>
+        rejection(
+          harness.mailpitLatestTokenFor(FIX.invitedMember, {
+            attempts: 3,
+            delayMs: 1,
+          }),
+        ),
+    );
+    assertSchemaFailure(
+      err,
+      /expected a "messages" array/i,
+      "raw invalid-JSON Mailpit polling list has a fixed canary-free schema failure",
+    );
+    ok(
+      calls.length === 1 && calls[0].url.endsWith("/api/v1/messages"),
+      "invalid-JSON Mailpit polling list fails immediately without another attempt",
+    );
+  }
+
   console.log(
-    "\nMalformed nested Auth users fail closed during absence checks:",
+    "\nMalformed nested Auth users fail closed before filtering or deletion:",
   );
   const malformedAuthUsers = [
     ["user object", null, /users\[0\].*object/i],
-    ["missing id", { email: FIX.invitedAdmin }, /users\[0\]\.id/i],
-    ["non-string id", { id: 7, email: FIX.invitedAdmin }, /users\[0\]\.id/i],
-    ["blank id", { id: "   ", email: FIX.invitedAdmin }, /users\[0\]\.id/i],
-    ["missing email", { id: "user-1" }, /users\[0\]\.email/i],
-    ["non-string email", { id: "user-1", email: 7 }, /users\[0\]\.email/i],
-    ["blank email", { id: "user-1", email: "   " }, /users\[0\]\.email/i],
+    [
+      "missing id",
+      { email: FIX.invitedAdmin, email_confirmed_at: null },
+      /users\[0\]\.id/i,
+    ],
+    [
+      "non-string id",
+      { id: 7, email: FIX.invitedAdmin, email_confirmed_at: null },
+      /users\[0\]\.id/i,
+    ],
+    [
+      "blank id",
+      { id: "   ", email: FIX.invitedAdmin, email_confirmed_at: null },
+      /users\[0\]\.id/i,
+    ],
+    [
+      "non-UUID id",
+      {
+        id: "not-a-uuid",
+        email: FIX.invitedAdmin,
+        email_confirmed_at: null,
+      },
+      /users\[0\]\.id.*UUID/i,
+      "cleanup",
+    ],
+    [
+      "query-shaped id",
+      {
+        id: `${AUTH_USER_IDS.admin}?redirect=attacker.invalid`,
+        email: FIX.invitedAdmin,
+        email_confirmed_at: null,
+      },
+      /users\[0\]\.id.*UUID/i,
+      "cleanup",
+    ],
+    [
+      "traversal-shaped id",
+      {
+        id: `../${AUTH_USER_IDS.admin}/../../tokens`,
+        email: FIX.invitedAdmin,
+        email_confirmed_at: null,
+      },
+      /users\[0\]\.id.*UUID/i,
+      "cleanup",
+    ],
+    [
+      "missing email",
+      { id: AUTH_USER_IDS.admin, email_confirmed_at: null },
+      /users\[0\]\.email/i,
+    ],
+    [
+      "non-string email",
+      { id: AUTH_USER_IDS.admin, email: 7, email_confirmed_at: null },
+      /users\[0\]\.email/i,
+    ],
+    [
+      "blank email",
+      {
+        id: AUTH_USER_IDS.admin,
+        email: "   ",
+        email_confirmed_at: null,
+      },
+      /users\[0\]\.email/i,
+    ],
+    [
+      "blank confirmation",
+      {
+        id: AUTH_USER_IDS.admin,
+        email: FIX.invitedAdmin,
+        email_confirmed_at: "   ",
+      },
+      /users\[0\]\.email_confirmed_at/i,
+    ],
+    [
+      "wrong-type confirmation",
+      {
+        id: AUTH_USER_IDS.admin,
+        email: FIX.invitedAdmin,
+        email_confirmed_at: 7,
+      },
+      /users\[0\]\.email_confirmed_at/i,
+    ],
   ];
-  for (const [caseName, user, fieldPattern] of malformedAuthUsers) {
+  for (const [caseName, user, fieldPattern, phase] of malformedAuthUsers) {
     const calls = [];
     const body = { users: [user], opaque: nestedCanary };
     const err = await withStubbedFetch(
@@ -976,7 +1185,12 @@ async function main() {
           respond: () => jsonResponse(JSON.stringify(body)),
         },
       ]),
-      () => rejection(harness.verifyFixturesAbsent()),
+      () =>
+        rejection(
+          phase === "cleanup"
+            ? harness.cleanup()
+            : harness.verifyFixturesAbsent(),
+        ),
     );
     assertSchemaFailure(
       err,
@@ -985,9 +1199,42 @@ async function main() {
     );
     ok(
       calls.length === 7 &&
-        calls.at(-1)?.method === "GET" &&
+        !calls.some(
+          (call) =>
+            call.method === "DELETE" &&
+            call.url.includes("/auth/v1/admin/users/"),
+        ) &&
+        calls.at(-1)?.method === (phase === "cleanup" ? "DELETE" : "GET") &&
         calls.at(-1)?.url.includes("/api/v1/messages"),
-      `Auth ${caseName} does not short-circuit independent absence phases`,
+      `Auth ${caseName} fails before deletion and preserves every later ${phase === "cleanup" ? "cleanup" : "absence"} phase`,
+    );
+  }
+  {
+    const calls = [];
+    const err = await withStubbedFetch(
+      overlayStub(calls, [
+        {
+          match: `filter=${encodeURIComponent(FIX.invitedAdmin)}`,
+          respond: () =>
+            jsonResponse(
+              JSON.stringify({
+                users: [
+                  {
+                    id: AUTH_USER_IDS.admin,
+                    email: FIX.invitedAdmin,
+                  },
+                ],
+              }),
+            ),
+        },
+      ]),
+      () => rejection(harness.verifyFixturesAbsent()),
+    );
+    ok(
+      err !== null &&
+        /auth user/.test(err.message) &&
+        !/malformed response body/i.test(err.message),
+      "omitted Auth email_confirmed_at normalizes to null instead of failing schema validation",
     );
   }
   {
@@ -1000,7 +1247,13 @@ async function main() {
           respond: () =>
             jsonResponse(
               JSON.stringify({
-                users: [{ id: "user-normalized", email: normalizedVariant }],
+                users: [
+                  {
+                    id: AUTH_USER_IDS.normalized,
+                    email: normalizedVariant,
+                    email_confirmed_at: null,
+                  },
+                ],
               }),
             ),
         },
@@ -1008,8 +1261,10 @@ async function main() {
       () => rejection(harness.verifyFixturesAbsent()),
     );
     ok(
-      err !== null && /auth user/.test(err.message),
-      "valid Auth email strings are normalized before fixture comparison",
+      err !== null &&
+        /auth user/.test(err.message) &&
+        !/malformed response body/i.test(err.message),
+      "explicit-null Auth confirmation is accepted while email strings are normalized before fixture comparison",
     );
   }
 
@@ -1192,6 +1447,41 @@ async function main() {
       `Mailpit ${caseName} fails immediately instead of polling again`,
     );
   }
+  {
+    const calls = [];
+    const err = await withStubbedFetch(
+      overlayStub(calls, [
+        {
+          match: "/api/v1/messages",
+          method: "GET",
+          respond: () => jsonResponse(validFixtureMail),
+        },
+        {
+          match: "/api/v1/message/m-detail",
+          method: "GET",
+          respond: () => jsonResponse(`{"Text":${invalidJsonCanary}`),
+        },
+      ]),
+      () =>
+        rejection(
+          harness.mailpitLatestTokenFor(FIX.invitedMember, {
+            attempts: 3,
+            delayMs: 1,
+          }),
+        ),
+    );
+    assertSchemaFailure(
+      err,
+      /expected an object/i,
+      "raw invalid-JSON Mailpit detail has a fixed canary-free schema failure",
+    );
+    ok(
+      calls.length === 2 &&
+        calls[0].url.endsWith("/api/v1/messages") &&
+        calls[1].url.endsWith("/api/v1/message/m-detail"),
+      "invalid-JSON Mailpit detail fails immediately instead of polling again",
+    );
+  }
 
   console.log("\nNested Auth failures remain exhaustive during cleanup:");
   {
@@ -1203,7 +1493,13 @@ async function main() {
           respond: () =>
             jsonResponse(
               JSON.stringify({
-                users: [{ id: "", email: nestedCanary }],
+                users: [
+                  {
+                    id: "",
+                    email: nestedCanary,
+                    email_confirmed_at: null,
+                  },
+                ],
               }),
             ),
         },
@@ -1304,11 +1600,26 @@ async function main() {
     const usersFor = (email) => {
       if (email === FIX.invitedAdmin) {
         return [
-          { id: "u-a1", email },
-          { id: "u-a2", email },
+          {
+            id: AUTH_USER_IDS.adminFirst,
+            email,
+            email_confirmed_at: null,
+          },
+          {
+            id: AUTH_USER_IDS.adminSecond,
+            email,
+            email_confirmed_at: "2026-07-19T00:00:00Z",
+          },
         ];
       }
-      if (email === FIX.invitedMember) return [{ id: "u-m1", email }];
+      if (email === FIX.invitedMember)
+        return [
+          {
+            id: AUTH_USER_IDS.memberCleanup,
+            email,
+            email_confirmed_at: null,
+          },
+        ];
       return [];
     };
     const base = cleanStackStub([]);
@@ -1322,7 +1633,10 @@ async function main() {
             JSON.stringify({ users: usersFor(u.searchParams.get("filter")) }),
           );
         }
-        if (u.pathname === "/auth/v1/admin/users/u-a1" && method === "DELETE") {
+        if (
+          u.pathname === `/auth/v1/admin/users/${AUTH_USER_IDS.adminFirst}` &&
+          method === "DELETE"
+        ) {
           return jsonResponse('{"message":"boom"}', 500);
         }
         if (
@@ -1347,9 +1661,9 @@ async function main() {
       .map((c) => c.url.split("/").pop());
     ok(
       deletes.length === 3 &&
-        deletes.includes("u-a1") &&
-        deletes.includes("u-a2") &&
-        deletes.includes("u-m1"),
+        deletes.includes(AUTH_USER_IDS.adminFirst) &&
+        deletes.includes(AUTH_USER_IDS.adminSecond) &&
+        deletes.includes(AUTH_USER_IDS.memberCleanup),
       `every fixture auth user was still deleted or attempted (saw: ${deletes.join(", ") || "none"})`,
     );
     ok(
@@ -1366,11 +1680,26 @@ async function main() {
     const usersFor = (email) => {
       if (email === FIX.invitedAdmin) {
         return [
-          { id: "u-a1", email },
-          { id: "u-a2", email },
+          {
+            id: AUTH_USER_IDS.adminFirst,
+            email,
+            email_confirmed_at: null,
+          },
+          {
+            id: AUTH_USER_IDS.adminSecond,
+            email,
+            email_confirmed_at: "2026-07-19T00:00:00Z",
+          },
         ];
       }
-      if (email === FIX.invitedMember) return [{ id: "u-m1", email }];
+      if (email === FIX.invitedMember)
+        return [
+          {
+            id: AUTH_USER_IDS.memberCleanup,
+            email,
+            email_confirmed_at: null,
+          },
+        ];
       return [];
     };
     const base = cleanStackStub([]);
@@ -1384,7 +1713,10 @@ async function main() {
             JSON.stringify({ users: usersFor(u.searchParams.get("filter")) }),
           );
         }
-        if (u.pathname === "/auth/v1/admin/users/u-a1" && method === "DELETE") {
+        if (
+          u.pathname === `/auth/v1/admin/users/${AUTH_USER_IDS.adminFirst}` &&
+          method === "DELETE"
+        ) {
           throw new TypeError("fetch failed: connection reset");
         }
         if (
@@ -1400,7 +1732,7 @@ async function main() {
     ok(err !== null, "cleanup() rejects when one auth-user delete throws");
     ok(
       err !== null &&
-        /u-a1/.test(err.message) &&
+        err.message.includes(AUTH_USER_IDS.adminFirst) &&
         /connection reset/i.test(err.message),
       "the thrown deletion error is retained, naming the user and the cause",
     );
@@ -1410,8 +1742,13 @@ async function main() {
       )
       .map((c) => c.url.split("/").pop());
     ok(
-      deletes.join(",") === "u-a1,u-a2,u-m1",
-      `the thrown u-a1 delete did not skip u-a2 (same email) or u-m1 (later email) (saw: ${deletes.join(", ") || "none"})`,
+      deletes.join(",") ===
+        [
+          AUTH_USER_IDS.adminFirst,
+          AUTH_USER_IDS.adminSecond,
+          AUTH_USER_IDS.memberCleanup,
+        ].join(","),
+      `the thrown first-admin delete did not skip the second admin (same email) or member (later email) (saw: ${deletes.join(", ") || "none"})`,
     );
     const listedEmails = calls
       .filter((c) => c.url.includes("/auth/v1/admin/users?filter="))
@@ -1529,6 +1866,46 @@ async function main() {
   }
 
   console.log(
+    "\nConfirmed invited-admin listings fail the genuine unconfirmed assertion:",
+  );
+  {
+    const calls = [];
+    const mod = await importHarness("main-confirmed-admin-listing");
+    const { result: outcome, output } = await withStubbedFetch(
+      simulatedHealthyStack(FIX, calls, {
+        invitedAdminListingConfirmation: "2026-07-19T01:02:03Z",
+      }),
+      () => withCapturedConsole(() => mod.main()),
+    );
+    ok(
+      outcome.functionalError !== null &&
+        outcome.checks === 19 &&
+        outcome.failures === 1 &&
+        output.some((line) =>
+          line.includes(
+            "✗ invited-admin auth user has email_confirmed_at unset",
+          ),
+        ),
+      "the specifically labeled genuine confirmation assertion fails on a confirmed timestamp",
+    );
+    ok(
+      outcome.teardownError === null,
+      "confirmed-listing mutation still completes cleanup and independent absence verification",
+    );
+    const expected = expectedHealthyTrace(FIX);
+    ok(
+      calls.length === expected.length &&
+        expected.every(
+          (entry, index) =>
+            calls[index]?.method === entry.method &&
+            calls[index]?.url === entry.url &&
+            calls[index]?.redirect === "error",
+        ),
+      "confirmed-listing mutation preserves the exact 42-request guarded trace through teardown",
+    );
+  }
+
+  console.log(
     "\nmain() fails before seeding when stale-fixture preparation fails:",
   );
   {
@@ -1571,7 +1948,7 @@ async function main() {
           respond: () =>
             jsonResponse(
               JSON.stringify({
-                users: [{ email: nestedCanary }],
+                users: [{ email: nestedCanary, email_confirmed_at: null }],
               }),
             ),
         },
@@ -1608,9 +1985,7 @@ async function main() {
           (init.method ?? "GET") === "GET"
         ) {
           record(calls, input, init);
-          return jsonResponse(
-            JSON.stringify({ Text: nestedCanary, HTML: null }),
-          );
+          return jsonResponse(`{"Text":${invalidJsonCanary}`);
         }
         return healthy(input, init);
       },
@@ -1619,9 +1994,9 @@ async function main() {
     ok(
       outcome.functionalError !== null &&
         /malformed response body/i.test(outcome.functionalError.message) &&
-        /HTML/i.test(outcome.functionalError.message) &&
-        !outcome.functionalError.message.includes(nestedCanary),
-      "main() retains the fixed schema-only malformed Mailpit detail failure",
+        /expected an object/i.test(outcome.functionalError.message) &&
+        !outcome.functionalError.message.includes(invalidJsonCanary),
+      "main() retains the fixed schema-only invalid-JSON Mailpit detail failure",
     );
     ok(
       outcome.teardownError === null,

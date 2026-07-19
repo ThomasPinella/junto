@@ -7,10 +7,8 @@
 -- §14) — rendered HTML is never persisted, it is always derived through the
 -- application's sanitized renderer. Publication status (draft|published) and
 -- visibility (public|members_only) are separate concepts
--- (docs/content/essays.md §6.3); the docs' data-model sketch also mentions an
--- archived status, but essays.md §6.3 settles the vocabulary at
--- draft|published and unpublishing is the revocation path — there is no
--- delete or archive flow for essays in this slice.
+-- (docs/content/essays.md §6.3); unpublishing is the revocation path — there
+-- is no delete or archive flow for essays in this slice.
 
 create table public.essays (
   id uuid primary key default gen_random_uuid(),
