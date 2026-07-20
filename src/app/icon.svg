@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Powdered wig</title>
+  <g fill="#FBFAF6" stroke="#1C1C18" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Tied queue, visible below the side rolls even at small sizes. -->
+    <path d="M27 43c0 7 .5 12 5 17 4.5-5 5-10 5-17Z" stroke-width="3"/>
+
+    <!-- A softly lobed crown avoids the silhouette of a helmet. -->
+    <path d="M15 28c-.5-8 3-14.5 9-17 2-4 6-3 8-.5 2-2.5 6-3.5 8 .5 6 2.5 9.5 9 9 17h-7c-.5-4.5-4-7-8-7s-7.5 2.5-8 7Z" stroke-width="3"/>
+
+    <!-- Individual rolled curls. Their overlaps and spiral marks carry the wig. -->
+    <ellipse cx="16" cy="29" rx="7" ry="6" stroke-width="3"/>
+    <ellipse cx="15" cy="38" rx="7" ry="6" stroke-width="3"/>
+    <ellipse cx="16" cy="47" rx="7" ry="6" stroke-width="3"/>
+    <ellipse cx="48" cy="29" rx="7" ry="6" stroke-width="3"/>
+    <ellipse cx="49" cy="38" rx="7" ry="6" stroke-width="3"/>
+    <ellipse cx="48" cy="47" rx="7" ry="6" stroke-width="3"/>
+
+    <g fill="none" stroke-width="1.75">
+      <path d="M18.5 27.5c-3-2.5-6.5-.5-5 2 1 1.5 3.5 1 4.5-.5"/>
+      <path d="M17.5 36.5c-3-2.5-6.5-.5-5 2 1 1.5 3.5 1 4.5-.5"/>
+      <path d="M18.5 45.5c-3-2.5-6.5-.5-5 2 1 1.5 3.5 1 4.5-.5"/>
+      <path d="M45.5 27.5c3-2.5 6.5-.5 5 2-1 1.5-3.5 1-4.5-.5"/>
+      <path d="M46.5 36.5c3-2.5 6.5-.5 5 2-1 1.5-3.5 1-4.5-.5"/>
+      <path d="M45.5 45.5c3-2.5 6.5-.5 5 2-1 1.5-3.5 1-4.5-.5"/>
+    </g>
+
+    <!-- The only accent: a restrained oxblood ribbon at the queue. -->
+    <path d="m32 46-6-3v7l6-3 6 3v-7Z" fill="#7A302B" stroke-width="2.5"/>
+  </g>
+</svg>
