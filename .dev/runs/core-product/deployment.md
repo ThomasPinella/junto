@@ -3,6 +3,7 @@
 ## Release identity
 
 - Product/run commit merged to `main`: `b6d898d9cdea99fd73b9cae34370bd22bcec0078`.
+- San Diego chapter-label release: `748f52d7379e999b70f296022566400370e62e54`.
 - GitHub remote: `ThomasPinella/junto`, branch `main`.
 - Deployment authorized and performed: 2026-07-20.
 
@@ -15,12 +16,14 @@
 - Region: US East, one stateless replica.
 - Source: GitHub `ThomasPinella/junto`, branch `main`.
 - Railpack used the committed `railway.toml`, `pnpm build`, `pnpm start`, dynamic `/health`, and the documented restart policy.
+- Current cutover deployment: `01fa4389-efdf-4ad0-9455-a82c94cee62a`.
 - Application variables are exactly the four documented public/runtime variables. No Supabase service-role or secret key is assigned to Railway.
 
 ## Supabase
 
-- Project: `Junto Production` (`perssuedgyfxfvpupnge`).
-- Region: `us-east-1`.
+- Organization: `Pinella` (`fwaeiatlkrtxthngquxr`).
+- Project: `Junto` (`kssglkszniahfcedtszu`).
+- Region: `us-east-2`.
 - Applied migration versions:
   - `20260718120000`
   - `20260718120100`
@@ -62,6 +65,11 @@ Passed against the production systems:
 - A non-team Gmail alias with a temporary pending invitation was accepted after Resend SMTP configuration, proving the default Supabase team-only mail restriction was no longer in force.
 - The temporary SMTP test Auth user and invitation were removed in independent cleanup phases and verified absent.
 - A fresh real operator sign-in email was accepted through Resend SMTP.
+- On 2026-07-20, production was migrated from the original Supabase account into the dedicated `Junto` project in the `Pinella` organization. A protected local export recorded the old environment before cutover.
+- The migration preserved the San Diego chapter ID, profile data, claimed-invitation ID/evidence, and active admin-membership ID. Supabase issued a new project-local Auth user ID, and all user references were remapped to it.
+- Hosted acceptance on the new project passed public rendering, anonymous private-table denial, migrated-user magic-link verification, authenticated profile/admin-membership/invitation RLS, invitation-gate rejection, and non-team Resend acceptance.
+- The disposable SMTP test Auth user and invitation were deleted with explicit approval and independently verified absent; final cardinalities exactly match the pre-migration inventory.
+- The previous Supabase project remains intact and its connection details/export remain in protected local files for rollback; Railway no longer references it.
 - Junto has no local Supabase containers, application servers, browsers, or relevant listeners left running. The separate Hazel development stack was identified by its own Docker project label and left untouched.
 - The local `main` branch and `origin/main` matched and the worktree was clean before this deployment record.
 
