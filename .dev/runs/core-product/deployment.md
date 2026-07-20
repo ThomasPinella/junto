@@ -12,11 +12,13 @@
 - Project: `Junto` (`b3d20dca-6c81-40d1-8267-f158b6b04172`).
 - Service: `web` (`3d9b4024-fd77-4550-95e3-f19e65bcdec6`).
 - Environment: `production`.
-- Public origin: `https://web-production-7724e.up.railway.app`.
+- Canonical public origin: `https://juntoessays.com`.
+- Railway fallback service origin: `https://web-production-7724e.up.railway.app`.
+- The apex custom domain is active, its Railway DNS record is propagated, its TLS certificate is valid, and plain HTTP redirects to HTTPS.
 - Region: US East, one stateless replica.
 - Source: GitHub `ThomasPinella/junto`, branch `main`.
 - Railpack used the committed `railway.toml`, `pnpm build`, `pnpm start`, dynamic `/health`, and the documented restart policy.
-- Current cutover deployment: `01fa4389-efdf-4ad0-9455-a82c94cee62a`.
+- Supabase account cutover deployment: `01fa4389-efdf-4ad0-9455-a82c94cee62a`.
 - Application variables are exactly the four documented public/runtime variables. No Supabase service-role or secret key is assigned to Railway.
 
 ## Supabase
@@ -32,8 +34,8 @@
   - `20260719120000`
   - `20260719170000`
 - No seed was applied.
-- Auth site URL is the exact Railway production origin.
-- Auth redirect allowlist contains the exact production `/auth/callback` URL.
+- Auth site URL is the canonical HTTPS origin: `https://juntoessays.com`.
+- Auth redirect allowlisting contains the exact HTTP and HTTPS base URLs and `/auth/callback` URLs. The application generates only the HTTPS callback.
 - Email confirmations remain required.
 - Anonymous sign-in remains disabled.
 - The Postgres `before_user_created_hook` is enabled and rejects addresses without a pending, unexpired invitation before creating `auth.users`.
@@ -53,7 +55,8 @@ No general seed, fixture, real member record, credential, or privileged bootstra
 Passed against the production systems:
 
 - Railway deployment reached `SUCCESS` and the service is online in US East.
-- Railway service domain is active.
+- Railway-generated and custom service domains are active.
+- `juntoessays.com` DNS is propagated to Railway, Railway TLS is valid, HTTP redirects to canonical HTTPS, and the HTTPS origin serves Junto.
 - `/health`, `/about`, `/`, `/meetings`, and `/essays` returned 200.
 - `/health` returned only `{"status":"ready"}` with `no-store` caching.
 - The public home/archive renders the hosted San Diego Chapter state.

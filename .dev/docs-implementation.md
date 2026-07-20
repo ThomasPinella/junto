@@ -230,8 +230,8 @@ Essay discussion and Junto chat journeys.
 
 ## Repository-wide operational status
 
-- The reviewed release is deployed at `https://web-production-7724e.up.railway.app`; exact handles and hosted evidence are recorded in `.dev/runs/core-product/deployment.md`.
-- Hosted Supabase migrations, Auth hook, required confirmations, exact redirects, Resend SMTP, Railway variables, controlled bootstrap, anonymous reads, invitation rejection, and pre-confirmation privacy were verified.
+- The reviewed release is deployed at canonical `https://juntoessays.com`; the Railway-generated fallback origin and exact hosted evidence are recorded in `.dev/runs/core-product/deployment.md`.
+- Hosted Supabase migrations, Auth hook, required confirmations, canonical HTTPS Site URL, exact HTTP/HTTPS base and callback allowlisting, Resend SMTP, Railway variables, controlled bootstrap, anonymous reads, invitation rejection, and pre-confirmation privacy were verified.
 - The operator's delivered email link remains the intentional mailbox-owned first-login action; no privileged shortcut was used to claim the admin invitation.
 - `/health` intentionally checks process/environment readiness only; separate hosted dependency checks passed and remain operationally distinct.
 - No known discrepancy remains among the reviewed governing documents, implementation, tests, and deployed configuration.

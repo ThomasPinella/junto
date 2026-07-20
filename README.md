@@ -200,11 +200,14 @@ Before a human-approved deployment:
    `supabase migration list`, then run `supabase db push`. Do not use
    `--include-seed`; Junto has no committed seed and production fixture seeding
    is forbidden.
-2. In Supabase Auth URL Configuration, set the Site URL to the exact production
-   `NEXT_PUBLIC_SITE_URL` and allow the exact
-   `https://<production-domain>/auth/callback` redirect. Configure production
-   SMTP and retain email confirmation plus the database signup hook; invitation
-   claiming depends on verified mailbox ownership.
+2. In Supabase Auth URL Configuration, set the Site URL to the exact canonical
+   HTTPS `NEXT_PUBLIC_SITE_URL`. Allow the exact canonical base URL and
+   `/auth/callback` URL. If the production apex must also accept HTTP, allow the
+   exact HTTP base and callback URLs as compatibility entries while keeping
+   HTTPS canonical; HTTP must redirect to HTTPS, and generated production links
+   must use HTTPS. Configure production SMTP and retain email confirmation plus
+   the database signup hook; invitation claiming depends on verified mailbox
+   ownership.
 3. Configure the four application variables above on the Railway service. Do
    not add `SUPABASE_SERVICE_ROLE_KEY`, local Supabase URLs, Mailpit URLs, fixture
    variables, a volume, or a deployment-time seed/migration command.
