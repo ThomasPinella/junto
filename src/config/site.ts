@@ -2,14 +2,18 @@ import "server-only";
 
 import { loadSiteEnv } from "@/lib/env";
 
-// Interim presentation only: until Junto records exist (T02+), the configured
-// initial chapter's display name is derived from its slug. Once chapters live
-// in the database, their stored display name replaces this.
+// The configured initial Junto keeps a URL-safe slug while its masthead uses
+// a readable chapter label. Stored Junto data supplies the full record on
+// data-backed pages.
 export function chapterNameFromSlug(slug: string): string {
   return slug
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+}
+
+export function chapterLabelFromSlug(slug: string): string {
+  return `${chapterNameFromSlug(slug)} Chapter`;
 }
 
 export interface SiteConfig {
@@ -26,6 +30,6 @@ export function siteConfig(): SiteConfig {
   return {
     siteUrl: env.NEXT_PUBLIC_SITE_URL,
     initialJuntoSlug: env.JUNTO_INITIAL_JUNTO_SLUG,
-    initialChapterName: chapterNameFromSlug(env.JUNTO_INITIAL_JUNTO_SLUG),
+    initialChapterName: chapterLabelFromSlug(env.JUNTO_INITIAL_JUNTO_SLUG),
   };
 }

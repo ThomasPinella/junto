@@ -23,7 +23,7 @@ export const juntoSlugSchema = z
   .string()
   .regex(
     /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-    'must be a lowercase URL slug such as "philadelphia"',
+    'must be a lowercase URL slug such as "san-diego"',
   );
 
 const siteEnvSchema = z.object({

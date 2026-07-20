@@ -39,12 +39,11 @@
 
 ## Intentional bootstrap
 
-A one-time operational bootstrap created:
+A one-time operational bootstrap created one active, public-archive Junto and one admin invitation for the operator. The operator completed mailbox verification, the callback claimed the invitation, and the resulting admin membership is active.
 
-- one active, public-archive `philadelphia` Junto; and
-- one pending admin invitation for the operator.
+The chapter was subsequently renamed in place to `San Diego Chapter`, with slug `san-diego` and location `San Diego, CA`; its existing identity, invitation history, and membership relationships were preserved.
 
-No general seed, fixture, real member record, credential, or privileged bootstrap path was committed. The invitation becomes durable authorization only after the operator verifies mailbox ownership and the callback claims it.
+No general seed, fixture, real member record, credential, or privileged bootstrap path was committed.
 
 ## Hosted verification
 
@@ -54,8 +53,8 @@ Passed against the production systems:
 - Railway service domain is active.
 - `/health`, `/about`, `/`, `/meetings`, and `/essays` returned 200.
 - `/health` returned only `{"status":"ready"}` with `no-store` caching.
-- The public home/archive rendered the hosted Philadelphia Junto state.
-- Anonymous `/portal` access redirected to the sign-in route.
+- The public home/archive renders the hosted San Diego Chapter state.
+- Anonymous `/portal` access redirects to the sign-in route.
 - All six local migration versions matched the remote migration history.
 - Anonymous reads could access the public essay projection but not private essay, membership, or invitation rows.
 - An uninvited random address was rejected by the hosted signup hook and no Auth user was created.
@@ -66,9 +65,8 @@ Passed against the production systems:
 - Junto has no local Supabase containers, application servers, browsers, or relevant listeners left running. The separate Hazel development stack was identified by its own Docker project label and left untouched.
 - The local `main` branch and `origin/main` matched and the worktree was clean before this deployment record.
 
-## Operator action and residual operations
+## Residual operations
 
-- The operator must click the delivered one-time email link to confirm the mailbox and claim the pending admin invitation. This is the intended first-use flow, not a privileged deployment step.
 - Rotate the initial Resend API credential because it was shared through chat before configuration; rotation does not require an application redeploy, only an SMTP credential update in Supabase.
 - Add archive and sitemap pagination before public essay counts materially exceed approximately 100.
 - `/health` intentionally remains a process/environment check; public and Auth dependency checks stay separate as recorded above.
