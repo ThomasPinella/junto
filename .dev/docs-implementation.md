@@ -10,7 +10,7 @@ Repository architecture, security, privacy, code-quality, accessibility, testing
 
 ### Not implemented
 
-Deployment, hosted migrations, production data changes, and bootstrap remain explicit human-authorized operations.
+Deployment remains an explicit human-authorized operation rather than product code. That authorization was subsequently granted: the reviewed release is live on Railway, the hosted Supabase project is migrated and configured, and the controlled initial Junto/admin invitation bootstrap is complete.
 
 ### Residual risks
 
@@ -228,9 +228,10 @@ Invited activation, rejected registration, multi-Junto access, public publicatio
 
 Essay discussion and Junto chat journeys.
 
-## Repository-wide residual operations
+## Repository-wide operational status
 
-- The exact candidate is deployment-ready but not deployed.
-- Hosted Supabase migrations, Auth hook/confirmation/redirect setup, SMTP, Railway variables, production bootstrap, and hosted anonymous/invited smoke tests require separate human authorization.
-- `/health` intentionally checks process/environment readiness only; hosted dependency smoke tests remain distinct.
-- No known discrepancy remains among the reviewed governing documents, implementation, and tests.
+- The reviewed release is deployed at `https://web-production-7724e.up.railway.app`; exact handles and hosted evidence are recorded in `.dev/runs/core-product/deployment.md`.
+- Hosted Supabase migrations, Auth hook, required confirmations, exact redirects, Resend SMTP, Railway variables, controlled bootstrap, anonymous reads, invitation rejection, and pre-confirmation privacy were verified.
+- The operator's delivered email link remains the intentional mailbox-owned first-login action; no privileged shortcut was used to claim the admin invitation.
+- `/health` intentionally checks process/environment readiness only; separate hosted dependency checks passed and remain operationally distinct.
+- No known discrepancy remains among the reviewed governing documents, implementation, tests, and deployed configuration.

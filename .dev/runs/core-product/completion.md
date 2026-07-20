@@ -58,10 +58,10 @@ None among the final reviewed governing documents, implementation, and tests.
 
 ### Residual risks
 
-- Hosted Supabase migration state, before-user-created hook configuration, email confirmations, SMTP delivery, Railway variables, and actual hosted behavior remain unverified until a separately approved bootstrap/deployment.
+- Hosted deployment, migration, Auth-hook, confirmation, Resend SMTP, bootstrap, public-read, and invited-auth boundary checks were completed after explicit authorization; exact operational evidence is in `deployment.md`.
 - Owner-rights public projections are intentionally narrow exceptions to base-table RLS. Any future projected column requires explicit privacy review and schema/test updates.
 - Public archive and sitemap reads are capped at 100 records; pagination/full sitemap scaling is required before materially exceeding that volume.
-- There is deliberately no committed production seed/bootstrap mechanism, so initial hosted setup remains a documented human operation.
+- There is deliberately no committed production seed/bootstrap mechanism. The current environment received one controlled operational bootstrap; future environments require the same deliberate procedure.
 
 ## Durable updates
 
@@ -87,4 +87,4 @@ Final candidate evidence at `8149895f66c532a6165ef7719e811b751ac7bf82`:
 - Run-level reconciliation: R32 `clean`, closing R27/R30 completely.
 - Engineering/release review: V28 safe to hand off; V33 confirmed the correction range safe to hand off with no findings.
 
-Material limitation: all hosted bootstrap, migration, SMTP, dependency, and deployment checks remain intentionally unperformed and require explicit human authorization.
+Production deployment was separately authorized and completed on Railway and Supabase. The delivered operator email must be clicked to perform the intended mailbox-owned first login, and the initially shared Resend credential should be rotated; neither requires product-code changes.
