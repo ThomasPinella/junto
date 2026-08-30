@@ -1,8 +1,8 @@
 {
   "run_id": "multi-chapter",
-  "stage": "building",
+  "stage": "reviewing",
   "baseline": "2a2febb0871158a589d28bd24a5dcd81f5413d38",
-  "review_baseline": null,
+  "review_baseline": "bf2f345ac10d5cc32517215e8a407aa1d1543819",
   "assignments": {
     "C01": {
       "task": "T01",
@@ -20,7 +20,7 @@
     "C02": {
       "task": "T02",
       "role": "builder",
-      "state": "reconciling",
+      "state": "integrated",
       "branch": "dev/multi-chapter-t02",
       "worktree": "/home/thomas/projects/junto-worktrees/multi-chapter-t02",
       "base": "a16b63504c66445b57ad11a296e0a3baffbd6efa",
@@ -46,7 +46,7 @@
     "C03": {
       "task": "T02-F01",
       "role": "builder",
-      "state": "complete",
+      "state": "integrated",
       "branch": "dev/multi-chapter-c03",
       "worktree": "/home/thomas/projects/junto-worktrees/multi-chapter-c03",
       "base": "51b4cb248f6cd910edae0e896540f1c974e7033d",
@@ -98,7 +98,7 @@
     "C05": {
       "task": "T02-F02-F03",
       "role": "builder",
-      "state": "complete",
+      "state": "integrated",
       "branch": "dev/multi-chapter-c05",
       "worktree": "/home/thomas/projects/junto-worktrees/multi-chapter-c05",
       "base": "fa78062a2161673ed0a28b8926502cdc197baeba",
@@ -111,7 +111,7 @@
     "R04": {
       "task": "T02-F02-F03",
       "role": "reconciler",
-      "state": "running",
+      "state": "complete",
       "branch": "dev/multi-chapter-c05",
       "worktree": "/home/thomas/projects/junto-worktrees/multi-chapter-c05",
       "base": "a16b63504c66445b57ad11a296e0a3baffbd6efa",
