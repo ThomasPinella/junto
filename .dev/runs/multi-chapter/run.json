@@ -1,6 +1,6 @@
 {
   "run_id": "multi-chapter",
-  "stage": "reviewing",
+  "stage": "fixing",
   "baseline": "2a2febb0871158a589d28bd24a5dcd81f5413d38",
   "review_baseline": "bf2f345ac10d5cc32517215e8a407aa1d1543819",
   "assignments": {
@@ -117,6 +117,32 @@
       "base": "a16b63504c66445b57ad11a296e0a3baffbd6efa",
       "result": "291af43b101dc38b81e4ab01f074c72116d16051",
       "process_handle": "proc_eb916c0911ed",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "medium"
+    },
+    "V01": {
+      "task": "final-integrated-review",
+      "role": "reviewer",
+      "state": "complete",
+      "branch": "dev/multi-chapter",
+      "worktree": "/home/thomas/projects/junto",
+      "base": "a16b63504c66445b57ad11a296e0a3baffbd6efa",
+      "result": "f4d0e4ab912251af9b9d20dea69ae84295baee2e",
+      "process_handle": "proc_69eb67e595fe",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "high"
+    },
+    "C06": {
+      "task": "V01-F01-F02",
+      "role": "builder",
+      "state": "running",
+      "branch": "dev/multi-chapter-c06",
+      "worktree": "/home/thomas/projects/junto-worktrees/multi-chapter-c06",
+      "base": "f4d0e4ab912251af9b9d20dea69ae84295baee2e",
+      "result": null,
+      "process_handle": "proc_063945089b98",
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "effort": "medium"
