@@ -1,6 +1,6 @@
 {
   "run_id": "multi-chapter",
-  "stage": "reviewing",
+  "stage": "merge-ready",
   "baseline": "2a2febb0871158a589d28bd24a5dcd81f5413d38",
   "review_baseline": "43eca004bbeb7d2d125d546a5d326f7b937d228a",
   "assignments": {
@@ -146,6 +146,19 @@
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "effort": "medium"
+    },
+    "V02": {
+      "task": "final-corrected-candidate-review",
+      "role": "reviewer",
+      "state": "complete",
+      "branch": "dev/multi-chapter",
+      "worktree": "/home/thomas/projects/junto",
+      "base": "a16b63504c66445b57ad11a296e0a3baffbd6efa",
+      "result": "f0a8e8b0d3cf9f6e369bcfc3401626a5ae654498",
+      "process_handle": "proc_0d43661c717f",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "high"
     }
   }
 }
