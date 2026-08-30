@@ -4,6 +4,8 @@ import { requireChapterCreator } from "@/lib/portal-access";
 
 import styles from "../../content.module.css";
 import formStyles from "../../[juntoSlug]/meetings/meetings.module.css";
+import { PortalFrame } from "../../frame";
+import { SignOutButton } from "../../sign-out-button";
 import { createChapter } from "./actions";
 
 export const metadata: Metadata = { title: "Create a chapter" };
@@ -35,104 +37,107 @@ export default async function NewChapterPage({
   const errorMessage = error ? ERROR_MESSAGES[error] : undefined;
 
   return (
-    <article>
-      <p className={styles.label}>Chapter administration</p>
-      <h1 className={styles.title}>Create a chapter</h1>
-      <div className={styles.body}>
-        <p>
-          Start a private writing room, then invite its first members from the
-          new chapter&rsquo;s Admin area. Your account becomes its first admin.
-        </p>
-      </div>
-      {errorMessage ? (
-        <p className={styles.problem} role="alert">
-          {errorMessage}
-        </p>
-      ) : null}
-      <form action={createChapter} className={formStyles.form}>
-        <div className={formStyles.field}>
-          <label className={formStyles.fieldLabel} htmlFor="chapter-name">
-            Chapter name
-          </label>
-          <input
-            className={formStyles.input}
-            id="chapter-name"
-            maxLength={120}
-            name="name"
-            required
-          />
-        </div>
-        <div className={formStyles.field}>
-          <label className={formStyles.fieldLabel} htmlFor="chapter-slug">
-            Chapter URL
-          </label>
-          <input
-            autoCapitalize="none"
-            autoCorrect="off"
-            className={formStyles.input}
-            id="chapter-slug"
-            maxLength={63}
-            name="slug"
-            pattern="[a-z0-9]+(-[a-z0-9]+)*"
-            placeholder="philadelphia"
-            required
-          />
-          <p className={formStyles.fieldHint}>
-            Lowercase letters and numbers separated by hyphens. This becomes the
-            chapter&rsquo;s stable portal address.
+    <PortalFrame aside={<SignOutButton />}>
+      <article>
+        <p className={styles.label}>Chapter administration</p>
+        <h1 className={styles.title}>Create a chapter</h1>
+        <div className={styles.body}>
+          <p>
+            Start a private writing room, then invite its first members from the
+            new chapter&rsquo;s Admin area. Your account becomes its first
+            admin.
           </p>
         </div>
-        <div className={formStyles.field}>
-          <label
-            className={formStyles.fieldLabel}
-            htmlFor="chapter-description"
-          >
-            Description
-          </label>
-          <textarea
-            className={formStyles.textarea}
-            id="chapter-description"
-            maxLength={2000}
-            name="description"
-          />
-        </div>
-        <div className={formStyles.field}>
-          <label className={formStyles.fieldLabel} htmlFor="chapter-location">
-            Location
-          </label>
-          <input
-            className={formStyles.input}
-            id="chapter-location"
-            maxLength={240}
-            name="location"
-          />
-        </div>
-        <div className={formStyles.field}>
-          <label
-            className={formStyles.fieldLabel}
-            htmlFor="chapter-archive-visibility"
-          >
-            Archive visibility
-          </label>
-          <select
-            className={formStyles.input}
-            defaultValue="private"
-            id="chapter-archive-visibility"
-            name="archive-visibility"
-          >
-            <option value="private">Junto members only</option>
-            <option value="public">Public</option>
-          </select>
-          <p className={formStyles.fieldHint}>
-            New chapters are private by default. Public makes eligible published
-            archive material discoverable; member work stays governed by its own
-            visibility.
+        {errorMessage ? (
+          <p className={styles.problem} role="alert">
+            {errorMessage}
           </p>
-        </div>
-        <button className={formStyles.submit} type="submit">
-          Create chapter
-        </button>
-      </form>
-    </article>
+        ) : null}
+        <form action={createChapter} className={formStyles.form}>
+          <div className={formStyles.field}>
+            <label className={formStyles.fieldLabel} htmlFor="chapter-name">
+              Chapter name
+            </label>
+            <input
+              className={formStyles.input}
+              id="chapter-name"
+              maxLength={120}
+              name="name"
+              required
+            />
+          </div>
+          <div className={formStyles.field}>
+            <label className={formStyles.fieldLabel} htmlFor="chapter-slug">
+              Chapter URL
+            </label>
+            <input
+              autoCapitalize="none"
+              autoCorrect="off"
+              className={formStyles.input}
+              id="chapter-slug"
+              maxLength={63}
+              name="slug"
+              pattern="[a-z0-9]+(-[a-z0-9]+)*"
+              placeholder="philadelphia"
+              required
+            />
+            <p className={formStyles.fieldHint}>
+              Lowercase letters and numbers separated by hyphens. This becomes
+              the chapter&rsquo;s stable portal address.
+            </p>
+          </div>
+          <div className={formStyles.field}>
+            <label
+              className={formStyles.fieldLabel}
+              htmlFor="chapter-description"
+            >
+              Description
+            </label>
+            <textarea
+              className={formStyles.textarea}
+              id="chapter-description"
+              maxLength={2000}
+              name="description"
+            />
+          </div>
+          <div className={formStyles.field}>
+            <label className={formStyles.fieldLabel} htmlFor="chapter-location">
+              Location
+            </label>
+            <input
+              className={formStyles.input}
+              id="chapter-location"
+              maxLength={240}
+              name="location"
+            />
+          </div>
+          <div className={formStyles.field}>
+            <label
+              className={formStyles.fieldLabel}
+              htmlFor="chapter-archive-visibility"
+            >
+              Archive visibility
+            </label>
+            <select
+              className={formStyles.input}
+              defaultValue="private"
+              id="chapter-archive-visibility"
+              name="archive-visibility"
+            >
+              <option value="private">Junto members only</option>
+              <option value="public">Public</option>
+            </select>
+            <p className={formStyles.fieldHint}>
+              New chapters are private by default. Public makes eligible
+              published archive material discoverable; member work stays
+              governed by its own visibility.
+            </p>
+          </div>
+          <button className={formStyles.submit} type="submit">
+            Create chapter
+          </button>
+        </form>
+      </article>
+    </PortalFrame>
   );
 }

@@ -321,6 +321,13 @@ test("an existing admin creates, switches, configures, invites, and grants only 
   await expect(
     page.getByRole("heading", { level: 1, name: "Create a chapter" }),
   ).toBeVisible();
+  await expect(page.locator("main#main-content")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Skip to content" }),
+  ).toHaveAttribute("href", "#main-content");
+  await expect(page.getByRole("link", { name: "JUNTO" })).toBeVisible();
+  await expect(page.getByText("Junto members only").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
   await page.getByLabel("Chapter name").fill(CHAPTER_BOOTSTRAP.name);

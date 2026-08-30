@@ -20,6 +20,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ]);
     return buildPublicSitemap(site.siteUrl, chapters, essays, meetings);
   } catch {
-    return [];
+    return buildPublicSitemap(site.siteUrl, [], [], []);
   }
 }
