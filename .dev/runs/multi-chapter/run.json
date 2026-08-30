@@ -7,7 +7,7 @@
     "C01": {
       "task": "T01",
       "role": "builder",
-      "state": "fixing",
+      "state": "reconciling",
       "branch": "dev/multi-chapter-t01",
       "worktree": "/home/thomas/projects/junto-worktrees/multi-chapter-t01",
       "base": "a16b63504c66445b57ad11a296e0a3baffbd6efa",
@@ -59,11 +59,11 @@
     "C04": {
       "task": "T01-F01-F02",
       "role": "builder",
-      "state": "running",
+      "state": "complete",
       "branch": "dev/multi-chapter-c04",
       "worktree": "/home/thomas/projects/junto-worktrees/multi-chapter-c04",
       "base": "66ae231d453e495f01ebd7c60bd375072c68f245",
-      "result": null,
+      "result": "fbced9a6161f3461fc111f78411392ad004bed82",
       "process_handle": "proc_851d938a50ae",
       "provider": "openai",
       "model": "gpt-5.6-sol",
@@ -78,6 +78,19 @@
       "base": "a16b63504c66445b57ad11a296e0a3baffbd6efa",
       "result": "fa78062a2161673ed0a28b8926502cdc197baeba",
       "process_handle": "proc_94c0f2b47d7a",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "high"
+    },
+    "R03": {
+      "task": "T01-F01-F02",
+      "role": "reconciler",
+      "state": "running",
+      "branch": "dev/multi-chapter-c04",
+      "worktree": "/home/thomas/projects/junto-worktrees/multi-chapter-c04",
+      "base": "a16b63504c66445b57ad11a296e0a3baffbd6efa",
+      "result": "fbced9a6161f3461fc111f78411392ad004bed82",
+      "process_handle": "proc_abc6135f43f4",
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "effort": "high"
