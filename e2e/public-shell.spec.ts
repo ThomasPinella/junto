@@ -201,7 +201,24 @@ test.describe("public publication shell", () => {
     expect(source).not.toMatch(/profile|members_only|service_role/);
     const response = await page.request.get("/sitemap.xml");
     expect(response.ok()).toBe(true);
-    expect(await response.text()).not.toMatch(/<url>/);
+    const sitemap = await response.text();
+    const locations = [...sitemap.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)].map(
+      ([, location]) => location,
+    );
+    expect(locations.toSorted()).toEqual(
+      [
+        "http://127.0.0.1:3210/",
+        "http://127.0.0.1:3210/essays",
+        "http://127.0.0.1:3210/authors",
+        "http://127.0.0.1:3210/meetings",
+      ].toSorted(),
+    );
+    expect(locations.join("\n")).not.toMatch(
+      /\/juntos\/|\/essays\/.+|\/authors\/.+|\/meetings\/.+/,
+    );
+    expect(sitemap).not.toMatch(
+      /private|portal|draft|members?|profile|internal|service[_-]?role/i,
+    );
   });
 
   test("honors prefers-reduced-motion", async ({ page }) => {
