@@ -5,8 +5,10 @@ import { buildPublicArchive } from "@/lib/public-archive-domain";
 import {
   GENERIC_AUTHOR_METADATA,
   GENERIC_ESSAY_METADATA,
+  GENERIC_JUNTO_METADATA,
   publicAuthorMetadata,
   publicEssayMetadata,
+  publicJuntoMetadata,
 } from "@/lib/public-seo";
 
 const essay: PublicEssay = {
@@ -32,11 +34,31 @@ describe("public metadata", () => {
       GENERIC_AUTHOR_METADATA,
     );
     expect(JSON.stringify(GENERIC_ESSAY_METADATA)).not.toContain("private");
+    expect(publicJuntoMetadata(null, "https://junto.example")).toEqual(
+      GENERIC_JUNTO_METADATA,
+    );
+  });
+
+  it("publishes canonical metadata only for an eligible public chapter", () => {
+    const metadata = publicJuntoMetadata(
+      {
+        name: "Philadelphia Junto",
+        slug: "philadelphia",
+        description: "Essays made around one table.",
+      },
+      "https://junto.example",
+    );
+    expect(metadata.title).toBe("Philadelphia Junto");
+    expect(metadata.alternates).toEqual({
+      canonical: "https://junto.example/juntos/philadelphia",
+    });
+    expect(JSON.stringify(metadata)).not.toMatch(/location|member|count/i);
   });
 
   it("contains only eligible projection content and canonical URLs", () => {
     const metadata = publicEssayMetadata(essay, "https://junto.example");
     expect(metadata.title).toBe(essay.title);
+    expect(metadata.description).toContain("Philadelphia Junto");
     expect(metadata.alternates).toEqual({
       canonical: "https://junto.example/essays/public-thinking",
     });
@@ -50,6 +72,7 @@ describe("public metadata", () => {
       "https://junto.example",
     );
     expect(authorMetadata.title).toBe("Maya Chen");
+    expect(authorMetadata.description).toContain("Philadelphia Junto");
     expect(authorMetadata.alternates).toEqual({
       canonical: "https://junto.example/authors/maya-chen",
     });

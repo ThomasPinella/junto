@@ -21,6 +21,7 @@ import {
   type MeetingWriteErrorKey,
   type PublicMeeting,
 } from "@/lib/meeting-domain";
+import { juntoSlugSchema } from "@/lib/env";
 import type { SupabaseServerClient } from "@/lib/supabase/server";
 
 const MEETING_COLUMNS =
@@ -205,17 +206,38 @@ export function publicMeetingReadSignal(): AbortSignal {
   return AbortSignal.timeout(PUBLIC_READ_TIMEOUT_MS);
 }
 
+export interface PublicMeetingQuery {
+  juntoSlug?: string;
+  limit?: number;
+  signal?: AbortSignal;
+}
+
+const publicMeetingQuerySchema = z.strictObject({
+  juntoSlug: juntoSlugSchema.optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+});
+
 export async function listPublicMeetings(
   supabase: SupabaseServerClient,
-  juntoSlug: string,
-  signal: AbortSignal = publicMeetingReadSignal(),
+  options: PublicMeetingQuery = {},
 ): Promise<PublicMeeting[]> {
-  const { data, error } = await supabase
+  const parsed = publicMeetingQuerySchema.safeParse({
+    juntoSlug: options.juntoSlug,
+    limit: options.limit,
+  });
+  if (!parsed.success) return [];
+  let query = supabase
     .from("public_meetings")
     .select(PUBLIC_MEETING_COLUMNS)
-    .eq("junto_slug", juntoSlug)
     .order("meeting_date", { ascending: false })
-    .abortSignal(signal);
+    .abortSignal(options.signal ?? publicMeetingReadSignal());
+  if (parsed.data.juntoSlug) {
+    query = query.eq("junto_slug", parsed.data.juntoSlug);
+  }
+  if (parsed.data.limit) {
+    query = query.limit(parsed.data.limit);
+  }
+  const { data, error } = await query;
   if (error) {
     throw new Error(`Public meeting listing failed (${error.code ?? "?"})`);
   }
@@ -244,9 +266,9 @@ export async function getPublicMeetingByDate(
   return data ? publicMeetingFromRow(publicMeetingRowSchema.parse(data)) : null;
 }
 
-const publicJuntoRowSchema = z.object({
+const publicJuntoRowSchema = z.strictObject({
   name: z.string(),
-  slug: z.string(),
+  slug: juntoSlugSchema,
   description: z.string().nullable(),
 });
 
@@ -254,6 +276,26 @@ export interface PublicJunto {
   name: string;
   slug: string;
   description: string | null;
+}
+
+export async function listPublicJuntos(
+  supabase: SupabaseServerClient,
+  signal: AbortSignal = publicMeetingReadSignal(),
+): Promise<PublicJunto[]> {
+  // These predicates remain mandatory even when an authenticated client is
+  // supplied accidentally. Public routes use the cookie-free anon client,
+  // while this query still states the active-public eligibility intent.
+  const { data, error } = await supabase
+    .from("juntos")
+    .select("name, slug, description")
+    .eq("status", "active")
+    .eq("archive_visibility", "public")
+    .order("name", { ascending: true })
+    .abortSignal(signal);
+  if (error) {
+    throw new Error(`Public junto listing failed (${error.code ?? "?"})`);
+  }
+  return z.array(publicJuntoRowSchema).parse(data ?? []);
 }
 
 // RLS already limits anon junto reads to active public chapters; the
@@ -264,6 +306,7 @@ export async function getPublicJunto(
   juntoSlug: string,
   signal: AbortSignal = publicMeetingReadSignal(),
 ): Promise<PublicJunto | null> {
+  if (!juntoSlugSchema.safeParse(juntoSlug).success) return null;
   const { data, error } = await supabase
     .from("juntos")
     .select("name, slug, description")

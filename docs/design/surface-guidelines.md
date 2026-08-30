@@ -17,14 +17,21 @@ The homepage is primarily an editorial exploration surface. It should reveal wha
 
 ### Recommended composition
 
-1. All-caps **JUNTO** masthead, with the chapter or city in restrained small caps.
-2. Quiet navigation: Archive, Meetings, Authors, About, Member Portal.
-3. One dominant featured meeting or essay.
-4. A composed list of essays connected to that meeting.
-5. Recent essays grouped as editorial rows rather than cards.
-6. Recent meetings or a meeting archive.
-7. Participating authors.
-8. A concise explanation of the Junto practice.
+1. All-caps **JUNTO** masthead, with chapter or network context in restrained
+   small caps.
+2. A text-led directory of active public chapters on the network overview.
+3. Quiet navigation: Archive, Meetings, Authors, About, Member Portal.
+4. One dominant featured meeting or essay where appropriate.
+5. A composed list of essays connected to that meeting.
+6. Recent network essays grouped as editorial rows rather than cards, with
+   explicit linked chapter attribution.
+7. Recent meetings or a meeting archive.
+8. Participating authors.
+9. A concise explanation of the Junto practice.
+
+On network-wide surfaces, the masthead may use a restrained network label
+instead of one chapter name. Chapter homes should establish their chapter name
+and description in the page hierarchy rather than introduce separate branding.
 
 ### Meeting-led feature
 

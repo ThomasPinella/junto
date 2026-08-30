@@ -22,9 +22,8 @@ export interface SiteConfig {
   initialChapterName: string;
 }
 
-// `/` serves the explicitly configured initial chapter; the configuration
-// seam keeps the app multi-Junto from the beginning
-// (docs/overview/product-principles.md §1.4).
+// The network overview may feature/order the configured initial chapter first
+// without restricting public discovery to it, preserving production config.
 export function siteConfig(): SiteConfig {
   const env = loadSiteEnv();
   return {

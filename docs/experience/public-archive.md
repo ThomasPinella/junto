@@ -4,14 +4,19 @@ The public archive should be attractive enough that authors feel proud sharing i
 
 ## Homepage
 
-The public homepage can show:
+The public homepage is the Junto network overview. It shows:
 
-- Junto name and description;
-- recent public essays;
-- featured essays;
-- recent meetings;
-- participating authors;
+- a directory of every active public chapter;
+- recent public essays across those chapters, each attributed and linked to
+  its chapter;
+- an optional featured chapter, meeting, or essay from the configured initial
+  chapter;
 - brief explanation of the Junto practice.
+
+Each active public chapter has a canonical home at `/juntos/[juntoSlug]` with
+its public description, meeting-led context, recent eligible public essays,
+and links into its proceedings. Private, inactive, missing, and malformed
+chapter routes use one metadata-safe not-found outcome.
 
 ## Essay archive
 
@@ -21,6 +26,11 @@ Visitors can browse public essays by:
 - author;
 - meeting;
 - potentially topic or tag later.
+
+The essay, meeting, and author indexes are network-wide. Chapter context must
+remain visible wherever records from multiple chapters could otherwise be
+ambiguous. Essay and author URLs remain globally stable; meeting URLs remain
+scoped under their chapter.
 
 ## Essay reading page
 

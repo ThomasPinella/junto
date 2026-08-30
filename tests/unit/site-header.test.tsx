@@ -8,19 +8,19 @@ afterEach(cleanup);
 
 describe("SiteHeader", () => {
   it("presents the uppercase JUNTO wordmark linking home", () => {
-    render(<SiteHeader chapterName="Philadelphia" />);
+    render(<SiteHeader contextLabel="Network archive" />);
     const wordmark = screen.getByRole("link", { name: "JUNTO" });
     expect(wordmark.textContent).toBe("JUNTO");
     expect(wordmark.getAttribute("href")).toBe("/");
   });
 
-  it("shows the chapter name beside the masthead", () => {
-    render(<SiteHeader chapterName="Philadelphia" />);
-    expect(screen.getByText("Philadelphia")).toBeTruthy();
+  it("shows the network context beside the masthead", () => {
+    render(<SiteHeader contextLabel="Network archive" />);
+    expect(screen.getByText("Network archive")).toBeTruthy();
   });
 
   it("offers the quiet publication navigation", () => {
-    render(<SiteHeader chapterName="Philadelphia" />);
+    render(<SiteHeader contextLabel="Network archive" />);
     const nav = screen.getByRole("navigation", { name: "Publication" });
     const links = nav.querySelectorAll("a");
     const entries = Array.from(links).map((link) => [

@@ -35,8 +35,8 @@ interface PublicMeetingRecord {
 }
 
 // The canonical public meeting page (docs/content/meetings.md):
-// /juntos/[juntoSlug]/meetings/[meetingDate]. Every miss — non-configured,
-// private, inactive, or nonexistent Junto; absent or malformed date; or a
+// /juntos/[juntoSlug]/meetings/[meetingDate]. Every miss — private, inactive,
+// or nonexistent Junto; absent or malformed date; or a
 // momentary archive failure — resolves to the SAME not-found, and reads use a
 // cookie-free anon client against the safe projection only, so nothing
 // distinguishes "private" from "never existed".
@@ -45,11 +45,9 @@ const loadRecord = cache(
     juntoSlug: string,
     meetingDate: string,
   ): Promise<PublicMeetingRecord | null> => {
-    const site = siteConfig();
     if (
       !juntoSlugSchema.safeParse(juntoSlug).success ||
-      !meetingDateSchema.safeParse(meetingDate).success ||
-      juntoSlug !== site.initialJuntoSlug
+      !meetingDateSchema.safeParse(meetingDate).success
     ) {
       return null;
     }
@@ -92,6 +90,15 @@ export async function generateMetadata({
   }
   return {
     title: `Meeting of ${formatMeetingDate(record.meeting.meetingDate)} · ${record.junto.name}`,
+    alternates: {
+      canonical: new URL(
+        routes.publicMeeting(
+          record.meeting.juntoSlug,
+          record.meeting.meetingDate,
+        ),
+        siteConfig().siteUrl,
+      ).toString(),
+    },
   };
 }
 
@@ -113,7 +120,7 @@ export default async function PublicMeetingPage({ params }: RouteParams) {
   return (
     <article>
       <p className={styles.metaLabel}>
-        {junto.name} &middot;{" "}
+        <Link href={routes.junto(junto.slug)}>{junto.name}</Link> &middot;{" "}
         <time dateTime={meeting.meetingDate}>
           {formatMeetingDate(meeting.meetingDate)}
         </time>{" "}
@@ -136,7 +143,10 @@ export default async function PublicMeetingPage({ params }: RouteParams) {
           {essays.length > 0 ? (
             <a
               className={styles.contextLink}
-              href={routes.essayArchive({ meetingDate: meeting.meetingDate })}
+              href={routes.essayArchive({
+                juntoSlug: meeting.juntoSlug,
+                meetingDate: meeting.meetingDate,
+              })}
             >
               Browse in the archive
             </a>

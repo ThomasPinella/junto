@@ -2,8 +2,10 @@ import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import {
   ESSAY_AUTHOR_EMAIL,
+  JUNTO_C,
   JUNTO_E,
   JUNTO_P,
+  JUNTO_Q,
   MEETING_C_PRIVATE,
   MEETING_E_UPCOMING,
   MEETING_P_COMPLETED,
@@ -34,8 +36,7 @@ const MAYA_SECOND_SLUG = "what-we-keep-in-common";
 const DANIEL_SLUG = "a-duty-to-future-neighbors";
 const ELM_ESSAY_SLUG = "elm-public-scope-trap";
 const ELM_ESSAY_TITLE = "Elm's Public Scope Trap";
-const ELM_BODY_MARKER = "C20 Elm public body must remain absent";
-const ELM_AUTHOR_MARKER = "c10-t05-author";
+const ELM_BODY_MARKER = "C20 Elm public body";
 const DRAFT_MARKER = "C17 draft words must remain absent";
 const MEMBERS_MARKER = "C17 members-only words must remain absent";
 
@@ -58,6 +59,7 @@ async function sessionAccessToken(): Promise<string> {
 async function signIn(
   email: string,
   juntoSlug: string = JUNTO_P.slug,
+  keepSession = false,
 ): Promise<string> {
   await clearMailbox();
   await page.goto("/portal/sign-in");
@@ -66,7 +68,9 @@ async function signIn(
   await page.goto(await latestAuthLinkFor(email));
   await expect(page).toHaveURL(`/portal/${juntoSlug}`);
   const token = await sessionAccessToken();
-  await page.getByRole("button", { name: "Sign out" }).click();
+  if (!keepSession) {
+    await page.getByRole("button", { name: "Sign out" }).click();
+  }
   return token;
 }
 
@@ -197,14 +201,34 @@ test.afterAll(async () => {
   });
 });
 
-test("homepage leads with a meeting and reaches a recent essay", async ({}, testInfo) => {
+test("network home lists every active public chapter and attributes recent essays", async ({}, testInfo) => {
   await page.goto("/");
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Public chapters" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: JUNTO_P.name }).first(),
+  ).toHaveAttribute("href", `/juntos/${JUNTO_P.slug}`);
+  await expect(
+    page.getByRole("link", { name: JUNTO_E.name }).first(),
+  ).toHaveAttribute("href", `/juntos/${JUNTO_E.slug}`);
+  await expect(page.getByText(JUNTO_Q.name)).toHaveCount(0);
+  await expect(page.getByText(JUNTO_C.name)).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: "The century ahead" }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "The Discipline of Noticing" }).first(),
   ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: ELM_ESSAY_TITLE }).first(),
+  ).toBeVisible();
+  const elmRow = page
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("link", { name: ELM_ESSAY_TITLE }) });
+  await expect(
+    elmRow.getByRole("link", { name: JUNTO_E.name }),
+  ).toHaveAttribute("href", `/juntos/${JUNTO_E.slug}`);
   if (testInfo.project.use.isMobile) {
     for (const [label, anchor] of [
       [
@@ -238,38 +262,50 @@ test("homepage leads with a meeting and reaches a recent essay", async ({}, test
   await expectNoOverflow();
 });
 
-test("a non-configured public Junto meeting is a generic metadata-safe miss", async () => {
-  const baselineResponse = await page.goto(
-    `/juntos/${JUNTO_P.slug}/meetings/2031-12-31`,
+test("active public chapter homes and meetings are network-addressable", async () => {
+  await page.goto(`/juntos/${JUNTO_E.slug}`);
+  await expect(
+    page.getByRole("heading", { level: 1, name: JUNTO_E.name }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: ELM_ESSAY_TITLE }).first(),
+  ).toHaveAttribute("href", `/essays/${ELM_ESSAY_SLUG}`);
+  await expect(page.getByText(MEETING_E_UPCOMING.description!)).toBeVisible();
+  await expectNoOverflow();
+
+  await page.goto(
+    `/juntos/${JUNTO_E.slug}/meetings/${MEETING_E_UPCOMING.date}`,
   );
+  await expect(
+    page.getByRole("heading", { level: 1, name: MEETING_E_UPCOMING.title! }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: ELM_ESSAY_TITLE })).toBeVisible();
+});
+
+test("private and inactive chapters share a generic metadata-safe miss", async () => {
+  const baselineResponse = await page.goto("/juntos/no-such-chapter");
   expect(baselineResponse?.status()).toBe(404);
   await expect(
     page.getByRole("heading", { level: 1, name: "Page not found" }),
   ).toBeVisible();
   const baselineTitle = await page.title();
 
-  const response = await page.goto(
-    `/juntos/${JUNTO_E.slug}/meetings/${MEETING_E_UPCOMING.date}`,
-  );
-  expect(response?.status()).toBe(404);
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Page not found" }),
-  ).toBeVisible();
-  expect(await page.title()).toBe(baselineTitle);
-  expect(await page.title()).toBe("Meeting · Junto");
-
-  const source = await page.content();
-  for (const marker of [
-    JUNTO_E.name,
-    MEETING_E_UPCOMING.title!,
-    MEETING_E_UPCOMING.theme!,
-    MEETING_E_UPCOMING.description!,
-    ELM_ESSAY_TITLE,
-    ELM_BODY_MARKER,
-    ELM_AUTHOR_MARKER,
-  ]) {
-    expect(source).not.toContain(marker);
+  for (const junto of [JUNTO_C, JUNTO_Q]) {
+    const response = await page.goto(`/juntos/${junto.slug}`);
+    expect(response?.status()).toBe(404);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Page not found" }),
+    ).toBeVisible();
+    expect(await page.title()).toBe(baselineTitle);
+    expect(await page.content()).not.toContain(junto.name);
   }
+  expect(baselineTitle).toBe("Junto chapter · Junto");
+
+  const privateMeeting = await page.goto(
+    `/juntos/${JUNTO_C.slug}/meetings/${MEETING_C_PRIVATE.date}`,
+  );
+  expect(privateMeeting?.status()).toBe(404);
+  expect(await page.content()).not.toContain(MEETING_C_PRIVATE.title!);
 });
 
 test("reading page renders long-form semantics and related public work", async ({}, testInfo) => {
@@ -323,13 +359,37 @@ test("archive browses canonically by author and meeting", async () => {
     `/juntos/${JUNTO_P.slug}/meetings/${MEETING_P_UPCOMING.date}`,
   );
   await page.getByRole("link", { name: "Browse in the archive" }).click();
-  await expect(page).toHaveURL(`/essays?meeting=${MEETING_P_UPCOMING.date}`);
+  await expect(page).toHaveURL(
+    `/essays?junto=${JUNTO_P.slug}&meeting=${MEETING_P_UPCOMING.date}`,
+  );
   await expect(
     page.getByRole("link", { name: "A Duty to Future Neighbors" }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "What We Keep in Common" }),
   ).toHaveCount(0);
+});
+
+test("network essay and meeting indexes retain chapter context", async () => {
+  await page.goto("/essays");
+  await expect(page.getByRole("link", { name: ELM_ESSAY_TITLE })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: JUNTO_E.name }).first(),
+  ).toHaveAttribute("href", `/juntos/${JUNTO_E.slug}`);
+
+  await page.goto("/meetings");
+  await expect(
+    page.getByRole("link", { name: MEETING_E_UPCOMING.title! }),
+  ).toHaveAttribute(
+    "href",
+    `/juntos/${JUNTO_E.slug}/meetings/${MEETING_E_UPCOMING.date}`,
+  );
+  await expect(
+    page.getByRole("link", { name: JUNTO_E.name }).first(),
+  ).toBeVisible();
+  await expect(page.getByText(MEETING_C_PRIVATE.title!)).toHaveCount(0);
+  await expect(page.getByText(MEETING_Q_INACTIVE.title!)).toHaveCount(0);
+  await expectNoOverflow();
 });
 
 test("authors index and meeting proceedings expose only public participants", async () => {
@@ -366,6 +426,27 @@ test("authors index and meeting proceedings expose only public participants", as
   await expectNoOverflow();
 });
 
+test("an authenticated browser cannot widen public archive eligibility", async () => {
+  await signIn(PUBLIC_AUTHOR_A_EMAIL, JUNTO_P.slug, true);
+  await page.goto("/");
+  await expect(
+    page.getByRole("link", { name: ELM_ESSAY_TITLE }).first(),
+  ).toBeVisible();
+  const source = await page.content();
+  for (const hidden of [
+    DRAFT_MARKER,
+    MEMBERS_MARKER,
+    "Unfinished Private Draft",
+    "Members Room Notes",
+    MEETING_C_PRIVATE.title!,
+    MEETING_Q_INACTIVE.title!,
+  ]) {
+    expect(source).not.toContain(hidden);
+  }
+  await page.goto(`/portal/${JUNTO_P.slug}`);
+  await page.getByRole("button", { name: "Sign out" }).click();
+});
+
 test("metadata and sitemap contain eligible URLs and no hidden records", async () => {
   await page.goto(`/essays/${FEATURE_SLUG}`);
   await expect(page).toHaveTitle(/The Discipline of Noticing/);
@@ -375,11 +456,16 @@ test("metadata and sitemap contain eligible URLs and no hidden records", async (
   );
   const sitemap = await (await page.request.get("/sitemap.xml")).text();
   expect(sitemap).toContain(`/essays/${FEATURE_SLUG}`);
+  expect(sitemap).toContain(`/juntos/${JUNTO_P.slug}`);
+  expect(sitemap).toContain(`/juntos/${JUNTO_E.slug}`);
+  expect(sitemap).toContain(`/essays/${ELM_ESSAY_SLUG}`);
   expect(sitemap).toContain("/authors/c17-public-maya");
   expect(sitemap).not.toContain("unfinished-private-draft");
   expect(sitemap).not.toContain("members-room-notes");
   expect(sitemap).not.toContain(MEETING_C_PRIVATE.date);
   expect(sitemap).not.toContain(MEETING_Q_INACTIVE.date);
+  expect(sitemap).not.toContain(JUNTO_C.slug);
+  expect(sitemap).not.toContain(JUNTO_Q.slug);
 });
 
 test("visibility revocation disappears from pages, metadata, and sitemap next request", async () => {

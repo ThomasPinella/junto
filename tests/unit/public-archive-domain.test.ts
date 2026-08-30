@@ -68,6 +68,30 @@ describe("public archive domain", () => {
     expect(archive.meetings).toHaveLength(2);
   });
 
+  it("keeps same-date meetings distinct while one global author can span chapters", () => {
+    const crossChapter: PublicEssay = {
+      ...essays[0]!,
+      slug: "attention-in-boston",
+      publishedAt: "2026-07-19T12:00:00Z",
+      juntoName: "Boston Junto",
+      juntoSlug: "boston",
+    };
+    const archive = buildPublicArchive([...essays, crossChapter]);
+
+    expect(
+      archive.meetings
+        .filter((meeting) => meeting.date === "2026-07-12")
+        .map((meeting) => meeting.juntoSlug)
+        .sort(),
+    ).toEqual(["boston", "philadelphia"]);
+    const maya = archive.authors.find((author) => author.slug === "maya-chen");
+    expect(maya?.chapters).toEqual([
+      { slug: "boston", name: "Boston Junto" },
+      { slug: "philadelphia", name: "Philadelphia Junto" },
+    ]);
+    expect(maya?.meetings).toHaveLength(3);
+  });
+
   it("keeps related content separate and excludes the current essay", () => {
     expect(relatedPublicEssays(essays[0]!, essays)).toEqual({
       moreByAuthor: [essays[1]],
@@ -77,8 +101,16 @@ describe("public archive domain", () => {
 
   it("accepts only canonical public filter shapes", () => {
     expect(
-      parseArchiveFilters({ author: "maya-chen", meeting: "2026-07-12" }),
-    ).toEqual({ authorSlug: "maya-chen", meetingDate: "2026-07-12" });
+      parseArchiveFilters({
+        junto: "philadelphia",
+        author: "maya-chen",
+        meeting: "2026-07-12",
+      }),
+    ).toEqual({
+      juntoSlug: "philadelphia",
+      authorSlug: "maya-chen",
+      meetingDate: "2026-07-12",
+    });
     expect(parseArchiveFilters({ author: "Maya Chen" })).toBeNull();
     expect(parseArchiveFilters({ meeting: "2026-02-30" })).toBeNull();
     expect(

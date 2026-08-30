@@ -17,6 +17,15 @@ describe("routes", () => {
     expect(routes.junto("philadelphia")).toBe("/juntos/philadelphia");
   });
 
+  it("builds a chapter-scoped public archive query without changing essay URLs", () => {
+    expect(
+      routes.essayArchive({
+        juntoSlug: "philadelphia",
+        meetingDate: "2026-07-12",
+      }),
+    ).toBe("/essays?junto=philadelphia&meeting=2026-07-12");
+  });
+
   it("places essay pages under /essays/[essaySlug]", () => {
     expect(routes.essay("what-do-we-owe-the-future")).toBe(
       "/essays/what-do-we-owe-the-future",

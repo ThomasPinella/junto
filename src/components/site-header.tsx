@@ -13,9 +13,9 @@ const navItems = [
 ] as const;
 
 // Masthead posture per DESIGN.md ("Masthead and navigation"): the uppercase
-// JUNTO wordmark with the chapter in restrained small caps and quiet
+// JUNTO wordmark with chapter or network context in restrained small caps and quiet
 // publication navigation — the top of a publication, not an app toolbar.
-export function SiteHeader({ chapterName }: { chapterName: string }) {
+export function SiteHeader({ contextLabel }: { contextLabel: string }) {
   return (
     <header className={styles.header}>
       <div>
@@ -24,7 +24,7 @@ export function SiteHeader({ chapterName }: { chapterName: string }) {
             JUNTO
           </Link>
         </p>
-        <p className={styles.chapter}>{chapterName}</p>
+        <p className={styles.chapter}>{contextLabel}</p>
       </div>
       <nav aria-label="Publication">
         <ul className={styles.navList}>

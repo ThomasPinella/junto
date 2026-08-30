@@ -3,9 +3,11 @@ import type { MetadataRoute } from "next";
 import { routes } from "@/config/routes";
 import type { PublicEssay } from "@/lib/essay-domain";
 import type { PublicMeeting } from "@/lib/meeting-domain";
+import type { PublicJunto } from "@/lib/meetings";
 
 export function buildPublicSitemap(
   siteUrl: string,
+  chapters: PublicJunto[],
   essays: PublicEssay[],
   meetings: PublicMeeting[],
 ): MetadataRoute.Sitemap {
@@ -22,6 +24,9 @@ export function buildPublicSitemap(
     { url: absolute(routes.essays) },
     { url: absolute(routes.authors) },
     { url: absolute(routes.meetings) },
+    ...chapters.map((chapter) => ({
+      url: absolute(routes.junto(chapter.slug)),
+    })),
     ...essays.map((essay) => ({
       url: absolute(routes.essay(essay.slug)),
       lastModified: new Date(essay.publishedAt),

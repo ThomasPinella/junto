@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { routes } from "@/config/routes";
-import { siteConfig } from "@/config/site";
+import { publicReadSignal } from "@/lib/essays";
 import {
   formatMeetingDate,
   meetingDisplayName,
@@ -10,72 +10,66 @@ import {
   type PublicMeeting,
 } from "@/lib/meeting-domain";
 import {
-  getPublicJunto,
+  listPublicJuntos,
   listPublicMeetings,
   type PublicJunto,
 } from "@/lib/meetings";
-import { publicReadSignal } from "@/lib/essays";
 import { createSupabaseAnonClient } from "@/lib/supabase/server";
 
 import styles from "../publication.module.css";
 
-export const metadata: Metadata = {
-  title: "Meetings",
-};
-
-// The archive changes as the chapter meets; render it per request.
+export const metadata: Metadata = { title: "Meetings" };
 export const dynamic = "force-dynamic";
 
-interface PublicArchive {
+interface PublicMeetingRecord {
   junto: PublicJunto;
-  meetings: PublicMeeting[];
+  meeting: PublicMeeting;
 }
 
-// One uniform quiet outcome whether the configured chapter is private,
-// inactive, missing, or the archive is momentarily unreachable: the page
-// discloses nothing about why there is no public record. Reads use a
-// cookie-free anon client and the safe projection only.
-async function loadPublicArchive(
-  juntoSlug: string,
-): Promise<PublicArchive | null> {
+async function loadPublicMeetings(): Promise<PublicMeetingRecord[] | null> {
   try {
     const signal = publicReadSignal();
     const supabase = createSupabaseAnonClient();
-    const junto = await getPublicJunto(supabase, juntoSlug, signal);
-    if (!junto) {
-      return null;
-    }
-    return {
-      junto,
-      meetings: await listPublicMeetings(supabase, juntoSlug, signal),
-    };
+    const [chapters, meetings] = await Promise.all([
+      listPublicJuntos(supabase, signal),
+      listPublicMeetings(supabase, { limit: 100, signal }),
+    ]);
+    const chaptersBySlug = new Map(
+      chapters.map((chapter) => [chapter.slug, chapter]),
+    );
+    return meetings.flatMap((meeting) => {
+      const junto = chaptersBySlug.get(meeting.juntoSlug);
+      return junto ? [{ junto, meeting }] : [];
+    });
   } catch {
     return null;
   }
 }
 
 export default async function MeetingsPage() {
-  const site = siteConfig();
-  const archive = await loadPublicArchive(site.initialJuntoSlug);
+  const records = await loadPublicMeetings();
 
   return (
     <article>
+      <p className={styles.metaLabel}>Network proceedings</p>
       <h1>Meetings</h1>
       <p className={styles.lede}>
-        Meetings give the archive its rhythm: a date, a table, and the essays
-        read aloud that evening.
-        {archive
-          ? ` This is the record of ${archive.junto.name}'s gatherings.`
-          : ""}
+        Meetings give the archive its rhythm: a chapter, a date, a table, and
+        the essays read aloud that evening.
       </p>
       <hr className={styles.rule} />
-      {archive && archive.meetings.length > 0 ? (
+      {records && records.length > 0 ? (
         <ul className={styles.archiveList}>
-          {archive.meetings.map((meeting) => {
+          {records.map(({ junto, meeting }) => {
             const name = meetingDisplayName(meeting);
             return (
-              <li className={styles.archiveRow} key={meeting.meetingDate}>
+              <li
+                className={styles.archiveRow}
+                key={`${meeting.juntoSlug}\0${meeting.meetingDate}`}
+              >
                 <p className={styles.metaLabel}>
+                  <Link href={routes.junto(junto.slug)}>{junto.name}</Link>
+                  {" · "}
                   <time dateTime={meeting.meetingDate}>
                     {formatMeetingDate(meeting.meetingDate)}
                   </time>
@@ -99,8 +93,7 @@ export default async function MeetingsPage() {
         </ul>
       ) : (
         <p className={styles.empty}>
-          No public meeting records yet. Completed meetings and the published
-          essays they gathered will appear here.
+          No public meeting records yet. Eligible proceedings will appear here.
         </p>
       )}
     </article>

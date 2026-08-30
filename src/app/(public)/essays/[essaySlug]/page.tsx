@@ -28,13 +28,11 @@ export const dynamic = "force-dynamic";
 const loadEssay = cache(async (essaySlug: string) => {
   if (!essaySlugSchema.safeParse(essaySlug).success) return null;
   try {
-    const site = siteConfig();
     const signal = publicReadSignal();
     const supabase = createSupabaseAnonClient();
     const [essay, eligibleEssays] = await Promise.all([
-      getPublicEssayBySlug(supabase, essaySlug, site.initialJuntoSlug, signal),
+      getPublicEssayBySlug(supabase, essaySlug, undefined, signal),
       listPublicEssays(supabase, {
-        juntoSlug: site.initialJuntoSlug,
         limit: 100,
         signal,
       }),
@@ -64,17 +62,22 @@ export default async function EssayPage({ params }: PageProps) {
   return (
     <article className={styles.essayPage}>
       <header className={styles.essayHeader}>
-        {essay.meetingDate ? (
-          <Link
-            className={styles.meetingContext}
-            href={routes.publicMeeting(essay.juntoSlug, essay.meetingDate)}
-          >
-            {essay.meetingTitle ?? "Meeting"} ·{" "}
-            <time dateTime={essay.meetingDate}>
-              {formatMeetingDate(essay.meetingDate)}
-            </time>
-          </Link>
-        ) : null}
+        <p className={styles.meetingContext}>
+          <Link href={routes.junto(essay.juntoSlug)}>{essay.juntoName}</Link>
+          {essay.meetingDate ? (
+            <>
+              {" · "}
+              <Link
+                href={routes.publicMeeting(essay.juntoSlug, essay.meetingDate)}
+              >
+                {essay.meetingTitle ?? "Meeting"} ·{" "}
+                <time dateTime={essay.meetingDate}>
+                  {formatMeetingDate(essay.meetingDate)}
+                </time>
+              </Link>
+            </>
+          ) : null}
+        </p>
         <h1>{essay.title}</h1>
         {essay.subtitle ? (
           <p className={styles.essaySubtitle}>{essay.subtitle}</p>

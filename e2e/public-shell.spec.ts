@@ -13,14 +13,26 @@ const publicShells = [
 const allShellPaths = ["/", ...publicShells.map((shell) => shell.path)];
 
 test.describe("public publication shell", () => {
-  test("serves the configured initial chapter's publication at /", async ({
+  test("serves the network overview and public chapter directory at /", async ({
     page,
   }) => {
     await page.goto("/");
     await expect(page).toHaveTitle("Junto");
-    await expect(page.getByRole("link", { name: "JUNTO" })).toBeVisible();
-    // Chapter name derived from JUNTO_INITIAL_JUNTO_SLUG in .env.local.
-    await expect(page.getByText("Philadelphia", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "JUNTO", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Network archive", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 2, name: "Public chapters" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        level: 2,
+        name: "Recent essays across chapters",
+      }),
+    ).toBeVisible();
   });
 
   test("uses the warm-paper canvas, not a generic dashboard background", async ({
@@ -135,6 +147,25 @@ test.describe("public publication shell", () => {
         page.getByRole("heading", { level: 1, name: "Page not found" }),
       ).toBeVisible();
     }
+  });
+
+  test("unavailable chapter pages use one metadata-safe not-found outcome", async ({
+    page,
+  }) => {
+    const titles = [];
+    for (const path of [
+      "/juntos/philadelphia",
+      "/juntos/no-such-junto",
+      "/juntos/Not%20A%20Slug",
+    ]) {
+      const response = await page.goto(path);
+      expect(response?.status()).toBe(404);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Page not found" }),
+      ).toBeVisible();
+      titles.push(await page.title());
+    }
+    expect(new Set(titles)).toEqual(new Set(["Junto chapter · Junto"]));
   });
 
   test("public essay and author misses stay generic and bounded with the archive unavailable", async ({

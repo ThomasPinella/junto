@@ -26,16 +26,24 @@
 
 .context {
   grid-row: 1 / span 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   padding-top: 0.35rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.context a,
+.chapter,
+.meeting,
 .byline a {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
+}
+
+.chapter {
+  color: var(--color-accent);
 }
 
 .title {

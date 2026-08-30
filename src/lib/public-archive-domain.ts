@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { essaySlugSchema, type PublicEssay } from "@/lib/essay-domain";
+import { juntoSlugSchema } from "@/lib/env";
 import { meetingDateSchema } from "@/lib/meeting-domain";
 
 export const authorSlugSchema = essaySlugSchema;
@@ -22,10 +23,12 @@ export interface PublicAuthor {
   name: string;
   essays: PublicEssay[];
   meetings: PublicArchiveMeeting[];
+  chapters: Array<{ slug: string; name: string }>;
 }
 
 export interface PublicArchiveMeeting {
   juntoSlug: string;
+  juntoName: string;
   date: string;
   title: string | null;
   essays: PublicEssay[];
@@ -70,6 +73,7 @@ export function buildPublicArchive(
       }
       return {
         juntoSlug: first.juntoSlug,
+        juntoName: first.juntoName,
         date: first.meetingDate!,
         title: first.meetingTitle,
         essays: meetingGroup,
@@ -84,7 +88,22 @@ export function buildPublicArchive(
       const represented = meetings.filter((meeting) =>
         meeting.authors.some((author) => author.slug === slug),
       );
-      return { slug, name, essays: authorEssayList, meetings: represented };
+      const chapters = new Map<string, string>();
+      for (const essay of authorEssayList) {
+        chapters.set(essay.juntoSlug, essay.juntoName);
+      }
+      return {
+        slug,
+        name,
+        essays: authorEssayList,
+        meetings: represented,
+        chapters: [...chapters]
+          .map(([chapterSlug, chapterName]) => ({
+            slug: chapterSlug,
+            name: chapterName,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -92,11 +111,13 @@ export function buildPublicArchive(
 }
 
 const archiveFilterSchema = z.strictObject({
+  junto: juntoSlugSchema.optional(),
   author: authorSlugSchema.optional(),
   meeting: meetingDateSchema.optional(),
 });
 
 export interface ArchiveFilters {
+  juntoSlug?: string;
   authorSlug?: string;
   meetingDate?: string;
 }
@@ -107,6 +128,7 @@ export function parseArchiveFilters(
   const parsed = archiveFilterSchema.safeParse(searchParams);
   if (!parsed.success) return null;
   return {
+    ...(parsed.data.junto ? { juntoSlug: parsed.data.junto } : {}),
     ...(parsed.data.author ? { authorSlug: parsed.data.author } : {}),
     ...(parsed.data.meeting ? { meetingDate: parsed.data.meeting } : {}),
   };

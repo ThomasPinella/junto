@@ -12,7 +12,7 @@ export const routes = {
   portalChapterNew: "/portal/chapters/new",
   portalSignIn: "/portal/sign-in",
   authCallback: "/auth/callback",
-  junto(juntoSlug: string): string {
+  junto(juntoSlug: string): `/juntos/${string}` {
     return `/juntos/${encodeURIComponent(juntoSlug)}`;
   },
   // The documented public meeting URL shape (docs/content/meetings.md):
@@ -60,10 +60,12 @@ export const routes = {
     return `/authors/${encodeURIComponent(authorSlug)}`;
   },
   essayArchive(filters: {
+    juntoSlug?: string;
     authorSlug?: string;
     meetingDate?: string;
-  }): `/essays${string}` {
+  }): "/essays" | `/essays?${string}` {
     const query = new URLSearchParams();
+    if (filters.juntoSlug) query.set("junto", filters.juntoSlug);
     if (filters.authorSlug) query.set("author", filters.authorSlug);
     if (filters.meetingDate) query.set("meeting", filters.meetingDate);
     const suffix = query.toString();

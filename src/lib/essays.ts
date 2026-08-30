@@ -32,6 +32,7 @@ import {
   authorSlugSchema,
   type ArchiveFilters,
 } from "@/lib/public-archive-domain";
+import { juntoSlugSchema } from "@/lib/env";
 
 const ESSAY_COLUMNS =
   "id, author_id, meeting_id, title, slug, subtitle, body_markdown, " +
@@ -295,13 +296,13 @@ export function publicReadSignal(): AbortSignal {
 }
 
 export interface PublicEssayQuery extends ArchiveFilters {
-  juntoSlug: string;
+  juntoSlug?: string;
   limit?: number;
   signal?: AbortSignal;
 }
 
 const publicEssayQuerySchema = z.strictObject({
-  juntoSlug: essaySlugSchema,
+  juntoSlug: juntoSlugSchema.optional(),
   authorSlug: authorSlugSchema.optional(),
   meetingDate: z.string().date().optional(),
   limit: z.number().int().min(1).max(100).optional(),
@@ -321,9 +322,11 @@ export async function listPublicEssays(
   let query = supabase
     .from("public_essays")
     .select(PUBLIC_ESSAY_COLUMNS)
-    .eq("junto_slug", parsed.data.juntoSlug)
     .order("published_at", { ascending: false })
     .abortSignal(options.signal ?? publicReadSignal());
+  if (parsed.data.juntoSlug) {
+    query = query.eq("junto_slug", parsed.data.juntoSlug);
+  }
   if (parsed.data.authorSlug) {
     query = query.eq("author_slug", parsed.data.authorSlug);
   }
@@ -355,7 +358,7 @@ export async function getPublicEssayBySlug(
   if (!essaySlugSchema.safeParse(essaySlug).success) {
     return null;
   }
-  if (juntoSlug && !essaySlugSchema.safeParse(juntoSlug).success) return null;
+  if (juntoSlug && !juntoSlugSchema.safeParse(juntoSlug).success) return null;
   let query = supabase
     .from("public_essays")
     .select(PUBLIC_ESSAY_COLUMNS)

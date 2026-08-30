@@ -76,6 +76,16 @@ describe("public essay data access", () => {
     );
   });
 
+  it("supports a network-wide aggregate without inventing a chapter filter", async () => {
+    const { client, calls, tables } = queryStub([validRow]);
+    const essays = await listPublicEssays(client, { limit: 24 });
+
+    expect(essays).toHaveLength(1);
+    expect(tables).toEqual(["public_essays"]);
+    expect(calls.filter(([name]) => name === "eq")).toEqual([]);
+    expect(calls).toContainEqual(["limit", 24]);
+  });
+
   it("rejects invalid filters before any public request", async () => {
     const untouchable = {
       from() {
@@ -93,6 +103,9 @@ describe("public essay data access", () => {
         juntoSlug: "philadelphia",
         meetingDate: "2026-02-30",
       }),
+    ).resolves.toEqual([]);
+    await expect(
+      listPublicEssays(untouchable, { juntoSlug: "Not A Chapter" }),
     ).resolves.toEqual([]);
   });
 

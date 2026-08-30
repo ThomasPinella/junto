@@ -18,8 +18,13 @@ Example URLs:
 /juntos/san-diego
 /juntos/san-francisco
 
-The first Junto could simply use:
+The first Junto can simply use:
 
 /juntos/san-diego
 
-or potentially live at the root of the public site while the application still models it as a Junto internally.
+The public root is the network overview. It lists every active Junto whose
+archive setting is public and links each one to its canonical chapter home at
+`/juntos/[juntoSlug]`. The configured initial Junto may be featured or ordered
+first, but it does not limit public discovery. Private and inactive Juntos must
+remain absent from the directory, public metadata, sitemaps, and aggregate
+archive views; their chapter URLs resolve identically to missing chapters.

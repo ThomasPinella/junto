@@ -19,6 +19,12 @@ profile without an eligible public essay has no anonymous read path.
 
 Unauthenticated users may not write any records.
 
+Public application routes must use the same anonymous eligibility boundary for
+signed-in and signed-out visitors. An authenticated browser session must not
+widen a public page, metadata response, cache entry, selector, or sitemap beyond
+active public Juntos and the existing eligible `public_essays` and
+`public_meetings` projections.
+
 ## Member access
 
 An authenticated user may read Junto-scoped private data only when an active membership exists:

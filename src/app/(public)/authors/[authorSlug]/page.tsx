@@ -8,7 +8,6 @@ import { routes } from "@/config/routes";
 import { siteConfig } from "@/config/site";
 import { listPublicEssays, publicReadSignal } from "@/lib/essays";
 import { formatMeetingDate } from "@/lib/meeting-domain";
-import { getPublicJunto } from "@/lib/meetings";
 import {
   authorSlugSchema,
   buildPublicArchive,
@@ -23,13 +22,9 @@ export const dynamic = "force-dynamic";
 const loadAuthor = cache(async (authorSlug: string) => {
   if (!authorSlugSchema.safeParse(authorSlug).success) return null;
   try {
-    const site = siteConfig();
     const signal = publicReadSignal();
     const supabase = createSupabaseAnonClient();
-    const junto = await getPublicJunto(supabase, site.initialJuntoSlug, signal);
-    if (!junto) return null;
     const essays = await listPublicEssays(supabase, {
-      juntoSlug: junto.slug,
       authorSlug,
       limit: 100,
       signal,
@@ -59,7 +54,8 @@ export default async function AuthorPage({ params }: PageProps) {
       <p className={styles.metaLabel}>Author</p>
       <h1>{author.name}</h1>
       <p className={styles.lede}>
-        Essays this author has chosen to place in the public Junto record.
+        Essays this author has chosen to place in the public Junto record across
+        active public chapters.
       </p>
       <a
         className={styles.contextLink}
@@ -82,15 +78,21 @@ export default async function AuthorPage({ params }: PageProps) {
           <h2 id="author-meetings">Meetings represented</h2>
           <ul className={styles.linkList}>
             {author.meetings.map((meeting) => (
-              <li key={meeting.date}>
+              <li key={`${meeting.juntoSlug}\0${meeting.date}`}>
                 <Link
                   href={routes.publicMeeting(meeting.juntoSlug, meeting.date)}
                 >
                   {meeting.title ?? formatMeetingDate(meeting.date)}
                 </Link>
-                <time dateTime={meeting.date}>
-                  {formatMeetingDate(meeting.date)}
-                </time>
+                <span className={styles.linkMeta}>
+                  <Link href={routes.junto(meeting.juntoSlug)}>
+                    {meeting.juntoName}
+                  </Link>{" "}
+                  ·{" "}
+                  <time dateTime={meeting.date}>
+                    {formatMeetingDate(meeting.date)}
+                  </time>
+                </span>
               </li>
             ))}
           </ul>

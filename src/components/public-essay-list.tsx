@@ -19,8 +19,15 @@ export function PublicEssayList({
       {essays.map((essay) => (
         <li className={styles.row} key={essay.slug}>
           <div className={styles.context}>
+            <Link
+              className={styles.chapter}
+              href={routes.junto(essay.juntoSlug)}
+            >
+              {essay.juntoName}
+            </Link>
             {essay.meetingDate ? (
               <Link
+                className={styles.meeting}
                 href={routes.publicMeeting(essay.juntoSlug, essay.meetingDate)}
               >
                 <time dateTime={essay.meetingDate}>
@@ -29,7 +36,7 @@ export function PublicEssayList({
                 {essay.meetingTitle ? ` · ${essay.meetingTitle}` : ""}
               </Link>
             ) : (
-              <time dateTime={essay.publishedAt}>
+              <time className={styles.meeting} dateTime={essay.publishedAt}>
                 {new Date(essay.publishedAt).toLocaleDateString("en-US", {
                   dateStyle: "long",
                   timeZone: "UTC",

@@ -3,10 +3,8 @@ import Link from "next/link";
 
 import { PublicEssayList } from "@/components/public-essay-list";
 import { routes } from "@/config/routes";
-import { siteConfig } from "@/config/site";
 import { listPublicEssays, publicReadSignal } from "@/lib/essays";
 import { formatMeetingDate } from "@/lib/meeting-domain";
-import { getPublicJunto } from "@/lib/meetings";
 import { parseArchiveFilters } from "@/lib/public-archive-domain";
 import { createSupabaseAnonClient } from "@/lib/supabase/server";
 
@@ -21,15 +19,12 @@ interface PageProps {
 
 export default async function EssayArchivePage({ searchParams }: PageProps) {
   const filters = parseArchiveFilters(await searchParams);
-  const site = siteConfig();
   let essays = null;
   try {
     const signal = publicReadSignal();
     const supabase = createSupabaseAnonClient();
-    const junto = await getPublicJunto(supabase, site.initialJuntoSlug, signal);
-    if (junto && filters) {
+    if (filters) {
       essays = await listPublicEssays(supabase, {
-        juntoSlug: junto.slug,
         ...filters,
         limit: 100,
         signal,
@@ -39,21 +34,25 @@ export default async function EssayArchivePage({ searchParams }: PageProps) {
     essays = null;
   }
 
-  const filterLabel = filters?.authorSlug
-    ? (essays?.[0]?.authorName ?? null)
-    : filters?.meetingDate
-      ? (essays?.[0]?.meetingTitle ??
-        (essays?.length ? formatMeetingDate(filters.meetingDate) : null))
-      : null;
-  const filtered = Boolean(filters?.authorSlug || filters?.meetingDate);
+  const filterLabel = filters?.juntoSlug
+    ? (essays?.[0]?.juntoName ?? null)
+    : filters?.authorSlug
+      ? (essays?.[0]?.authorName ?? null)
+      : filters?.meetingDate
+        ? (essays?.[0]?.meetingTitle ??
+          (essays?.length ? formatMeetingDate(filters.meetingDate) : null))
+        : null;
+  const filtered = Boolean(
+    filters?.juntoSlug || filters?.authorSlug || filters?.meetingDate,
+  );
 
   return (
     <article>
       <p className={styles.metaLabel}>Public proceedings</p>
       <h1>Essay archive</h1>
       <p className={styles.lede}>
-        Essays published by Junto members, each tied to the meeting where it was
-        read aloud and discussed.
+        Essays published across active public Junto chapters, each tied to the
+        chapter and meeting where it was read aloud and discussed.
       </p>
       {filtered && filterLabel ? (
         <div className={styles.filterState}>

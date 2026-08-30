@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { siteConfig } from "@/config/site";
 import { listPublicEssays, publicReadSignal } from "@/lib/essays";
-import { getPublicJunto, listPublicMeetings } from "@/lib/meetings";
+import { listPublicJuntos, listPublicMeetings } from "@/lib/meetings";
 import { buildPublicSitemap } from "@/lib/public-sitemap";
 import { createSupabaseAnonClient } from "@/lib/supabase/server";
 
@@ -13,17 +13,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const signal = publicReadSignal();
     const supabase = createSupabaseAnonClient();
-    const junto = await getPublicJunto(supabase, site.initialJuntoSlug, signal);
-    if (!junto) return [];
-    const [essays, meetings] = await Promise.all([
-      listPublicEssays(supabase, {
-        juntoSlug: junto.slug,
-        limit: 100,
-        signal,
-      }),
-      listPublicMeetings(supabase, junto.slug, signal),
+    const [chapters, essays, meetings] = await Promise.all([
+      listPublicJuntos(supabase, signal),
+      listPublicEssays(supabase, { limit: 100, signal }),
+      listPublicMeetings(supabase, { limit: 100, signal }),
     ]);
-    return buildPublicSitemap(site.siteUrl, essays, meetings);
+    return buildPublicSitemap(site.siteUrl, chapters, essays, meetings);
   } catch {
     return [];
   }
