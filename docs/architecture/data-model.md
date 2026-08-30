@@ -62,9 +62,10 @@ administrator membership. If either write fails, neither record persists.
 
 New Junto metadata is bounded at both the server and database boundaries:
 names are 1–120 trimmed characters, slugs are 1–63 lowercase alphanumeric
-segments separated by single hyphens, descriptions are at most 2,000
-characters, and locations are at most 240 characters. Archive visibility is
-`private` unless `public` is explicitly supplied.
+segments separated by single hyphens, and the exact slug `sign-in` is reserved
+for the static portal sign-in route. Descriptions are at most 2,000 characters,
+and locations are at most 240 characters. Archive visibility is `private`
+unless `public` is explicitly supplied.
 
 ## meetings
 

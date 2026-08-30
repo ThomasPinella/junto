@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(34);
+select plan(45);
 
 insert into public.juntos (id, name, slug, archive_visibility, status)
 values
@@ -165,14 +165,33 @@ select throws_ok(
   '17. explicit null visibility fails closed rather than becoming public or private'
 );
 
+select throws_ok(
+  $$select * from public.bootstrap_junto('Reserved route', 'sign-in')$$,
+  '22023', null,
+  '18. the static portal sign-in slug is reserved at the RPC boundary'
+);
+
 reset role;
 select set_config('request.jwt.claims', '', true);
 
 select is(
   (select count(*)::int from public.juntos
-    where slug in ('Bad Slug', 'null-visibility')),
+    where slug in ('Bad Slug', 'null-visibility', 'sign-in')),
   0,
-  '18. invalid inputs create no orphan chapter'
+  '19. invalid and reserved inputs create no orphan chapter'
+);
+
+select set_config(
+  'junto.test_chapter_snapshot',
+  (select md5(string_agg(to_jsonb(j)::text, ',' order by j.id))
+     from public.juntos j),
+  true
+);
+select set_config(
+  'junto.test_membership_snapshot',
+  (select md5(string_agg(to_jsonb(m)::text, ',' order by m.id))
+     from public.junto_members m),
+  true
 );
 
 select set_config('request.jwt.claims',
@@ -180,18 +199,44 @@ select set_config('request.jwt.claims',
 set local role authenticated;
 
 select throws_ok(
-  $$select * from public.bootstrap_junto('Member attempt', 'member-attempt')$$,
+  $$select * from public.bootstrap_junto('Private slug probe', 'birch')$$,
   '42501', null,
-  '19. an ordinary member cannot bootstrap a chapter'
+  '20. ordinary-member authorization wins before an existing private slug probe'
+);
+
+select throws_ok(
+  $$select * from public.bootstrap_junto('Malformed probe', 'Bad Slug')$$,
+  '42501', null,
+  '21. ordinary-member authorization wins before malformed slug validation'
+);
+
+select throws_ok(
+  $$select * from public.bootstrap_junto('Reserved probe', 'sign-in')$$,
+  '42501', null,
+  '22. ordinary-member authorization wins before reserved slug validation'
+);
+
+select throws_ok(
+  $$select * from public.bootstrap_junto(null, null, null, null, null)$$,
+  '42501', null,
+  '23. ordinary-member authorization wins before null-input validation'
 );
 
 reset role;
 select set_config('request.jwt.claims', '', true);
 
 select is(
-  (select count(*)::int from public.juntos where slug = 'member-attempt'),
-  0,
-  '20. member denial creates no chapter'
+  (select md5(string_agg(to_jsonb(j)::text, ',' order by j.id))
+     from public.juntos j),
+  current_setting('junto.test_chapter_snapshot'),
+  '24. ordinary-member denials create or alter no chapter rows'
+);
+
+select is(
+  (select md5(string_agg(to_jsonb(m)::text, ',' order by m.id))
+     from public.junto_members m),
+  current_setting('junto.test_membership_snapshot'),
+  '25. ordinary-member denials create or alter no membership rows'
 );
 
 select set_config('request.jwt.claims',
@@ -199,25 +244,51 @@ select set_config('request.jwt.claims',
 set local role authenticated;
 
 select throws_ok(
-  $$select * from public.bootstrap_junto('Former attempt', 'former-attempt')$$,
+  $$select * from public.bootstrap_junto('Private slug probe', 'birch')$$,
   '42501', null,
-  '21. an inactive former admin cannot bootstrap a chapter'
+  '26. inactive-admin authorization wins before an existing private slug probe'
+);
+
+select throws_ok(
+  $$select * from public.bootstrap_junto('Malformed probe', 'Bad Slug')$$,
+  '42501', null,
+  '27. inactive-admin authorization wins before malformed slug validation'
+);
+
+select throws_ok(
+  $$select * from public.bootstrap_junto('Reserved probe', 'sign-in')$$,
+  '42501', null,
+  '28. inactive-admin authorization wins before reserved slug validation'
+);
+
+select throws_ok(
+  $$select * from public.bootstrap_junto(null, null, null, null, null)$$,
+  '42501', null,
+  '29. inactive-admin authorization wins before null-input validation'
 );
 
 reset role;
 select set_config('request.jwt.claims', '', true);
 
 select is(
-  (select count(*)::int from public.juntos where slug = 'former-attempt'),
-  0,
-  '22. inactive-admin denial creates no chapter'
+  (select md5(string_agg(to_jsonb(j)::text, ',' order by j.id))
+     from public.juntos j),
+  current_setting('junto.test_chapter_snapshot'),
+  '30. inactive-admin denials create or alter no chapter rows'
+);
+
+select is(
+  (select md5(string_agg(to_jsonb(m)::text, ',' order by m.id))
+     from public.junto_members m),
+  current_setting('junto.test_membership_snapshot'),
+  '31. inactive-admin denials create or alter no membership rows'
 );
 
 set local role authenticated;
 select throws_ok(
   $$select * from public.bootstrap_junto('No identity', 'no-identity')$$,
   '42501', null,
-  '23. an authenticated database role without auth.uid() is denied'
+  '32. an authenticated database role without auth.uid() is denied'
 );
 reset role;
 
@@ -225,7 +296,7 @@ set local role anon;
 select throws_ok(
   $$select * from public.bootstrap_junto('Anonymous', 'anonymous-attempt')$$,
   '42501', null,
-  '24. an unauthenticated request cannot execute the RPC'
+  '33. an unauthenticated request cannot execute the RPC'
 );
 reset role;
 
@@ -255,7 +326,7 @@ set local role authenticated;
 select throws_ok(
   $$select * from public.bootstrap_junto('Atomic failure', 'atomic-failure')$$,
   '23514', null,
-  '25. a forced first-membership failure aborts bootstrap'
+  '34. a forced first-membership failure aborts bootstrap'
 );
 
 reset role;
@@ -266,7 +337,7 @@ drop function public.fail_atomic_bootstrap();
 select is(
   (select count(*)::int from public.juntos where slug = 'atomic-failure'),
   0,
-  '26. atomic failure leaves no orphan Junto row'
+  '35. atomic failure leaves no orphan Junto row'
 );
 
 select is(
@@ -274,7 +345,7 @@ select is(
     join public.juntos j on j.id = m.junto_id
     where j.slug = 'atomic-failure'),
   0,
-  '27. atomic failure leaves no partial membership'
+  '36. atomic failure leaves no partial membership'
 );
 
 select set_config('request.jwt.claims',
@@ -291,13 +362,13 @@ select set_config('junto.test_rows',
 select is(
   current_setting('junto.test_rows', true),
   '0',
-  '28. another chapter admin cannot update the new chapter settings'
+  '37. another chapter admin cannot update the new chapter settings'
 );
 
 select is(
   (select count(*)::int from public.juntos where slug = 'maple'),
   0,
-  '29. another chapter admin cannot read the private new chapter'
+  '38. another chapter admin cannot read the private new chapter'
 );
 
 reset role;
@@ -308,7 +379,7 @@ set local role authenticated;
 select is(
   (select count(*)::int from public.juntos where slug = 'maple'),
   0,
-  '30. an ordinary member of the source chapter cannot read the new chapter'
+  '39. an ordinary member of the source chapter cannot read the new chapter'
 );
 
 reset role;
@@ -319,22 +390,35 @@ set local role authenticated;
 select is(
   (select count(*)::int from public.juntos where slug in ('alder', 'maple')),
   2,
-  '31. the creator reads both independently authorized memberships'
+  '40. the creator reads both independently authorized memberships'
 );
 
 select throws_ok(
   $$insert into public.juntos (name, slug) values ('Direct', 'direct')$$,
   '42501', null,
-  '32. an eligible admin still cannot bypass bootstrap with a direct insert'
+  '41. an eligible admin still cannot bypass bootstrap with a direct insert'
 );
 
 reset role;
 select set_config('request.jwt.claims', '', true);
 
 select throws_ok(
+  $$update public.juntos set slug = 'sign-in' where slug = 'alder'$$,
+  '23514', null,
+  '42. the table boundary blocks a trusted direct reserved-slug update'
+);
+
+select is(
+  (select slug from public.juntos
+    where id = '71000000-0000-4000-a000-000000000001'),
+  'alder',
+  '43. the rejected direct update leaves the chapter slug unchanged'
+);
+
+select throws_ok(
   $$insert into public.juntos (name, slug) values (repeat('x', 121), 'oversized')$$,
   '23514', null,
-  '33. additive database bounds protect direct trusted writes too'
+  '44. additive database bounds protect direct trusted writes too'
 );
 
 select is(
@@ -344,7 +428,7 @@ select is(
       '71000000-0000-4000-a000-000000000002'
     )),
   2,
-  '34. pre-existing chapter rows remain untouched'
+  '45. seed chapter rows remain intact throughout the suite'
 );
 
 select * from finish();

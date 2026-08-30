@@ -65,6 +65,20 @@ describe("parseChapterForm", () => {
     });
   });
 
+  it("reserves only the static portal sign-in slug", () => {
+    expect(
+      parseChapterForm(form({ name: "Sign in", slug: "sign-in" })),
+    ).toEqual({
+      ok: false,
+      errorKey: "slug-invalid",
+    });
+    expect(
+      parseChapterForm(
+        form({ name: "Sign-in Circle", slug: "sign-in-circle" }),
+      ),
+    ).toMatchObject({ ok: true, input: { slug: "sign-in-circle" } });
+  });
+
   it("fails closed on forged visibility and oversized bounded fields", () => {
     expect(
       parseChapterForm(

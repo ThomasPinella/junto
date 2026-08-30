@@ -6,6 +6,8 @@ alter table public.juntos
     check (char_length(btrim(name)) between 1 and 120) not valid,
   add constraint juntos_slug_length
     check (char_length(slug) between 1 and 63) not valid,
+  add constraint juntos_slug_not_reserved
+    check (slug <> 'sign-in') not valid,
   add constraint juntos_description_length
     check (description is null or char_length(description) <= 2000) not valid,
   add constraint juntos_location_length
@@ -57,6 +59,7 @@ begin
   if chapter_slug is null
      or chapter_slug <> btrim(chapter_slug)
      or char_length(chapter_slug) > 63
+     or chapter_slug = 'sign-in'
      or chapter_slug !~ '^[a-z0-9]+(-[a-z0-9]+)*$' then
     raise exception 'Invalid chapter slug' using errcode = '22023';
   end if;
