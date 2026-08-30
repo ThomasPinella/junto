@@ -1,8 +1,8 @@
 {
   "run_id": "multi-chapter",
-  "stage": "fixing",
+  "stage": "reviewing",
   "baseline": "2a2febb0871158a589d28bd24a5dcd81f5413d38",
-  "review_baseline": "bf2f345ac10d5cc32517215e8a407aa1d1543819",
+  "review_baseline": "43eca004bbeb7d2d125d546a5d326f7b937d228a",
   "assignments": {
     "C01": {
       "task": "T01",
@@ -137,11 +137,11 @@
     "C06": {
       "task": "V01-F01-F02",
       "role": "builder",
-      "state": "running",
+      "state": "integrated",
       "branch": "dev/multi-chapter-c06",
       "worktree": "/home/thomas/projects/junto-worktrees/multi-chapter-c06",
       "base": "f4d0e4ab912251af9b9d20dea69ae84295baee2e",
-      "result": null,
+      "result": "697fd83c1291219c16908ad864f00258ba9c6974",
       "process_handle": "proc_063945089b98",
       "provider": "openai",
       "model": "gpt-5.6-sol",
