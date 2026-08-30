@@ -7,11 +7,11 @@
     "C01": {
       "task": "T01",
       "role": "builder",
-      "state": "running",
+      "state": "reconciling",
       "branch": "dev/multi-chapter-t01",
       "worktree": "/home/thomas/projects/junto-worktrees/multi-chapter-t01",
       "base": "a16b63504c66445b57ad11a296e0a3baffbd6efa",
-      "result": null,
+      "result": "66ae231d453e495f01ebd7c60bd375072c68f245",
       "process_handle": "proc_03557a903f30",
       "provider": "openai",
       "model": "gpt-5.6-sol",
@@ -26,6 +26,19 @@
       "base": "a16b63504c66445b57ad11a296e0a3baffbd6efa",
       "result": null,
       "process_handle": "proc_049a07715dce",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "high"
+    },
+    "R01": {
+      "task": "T01",
+      "role": "reconciler",
+      "state": "running",
+      "branch": "dev/multi-chapter-t01",
+      "worktree": "/home/thomas/projects/junto-worktrees/multi-chapter-t01",
+      "base": "a16b63504c66445b57ad11a296e0a3baffbd6efa",
+      "result": "66ae231d453e495f01ebd7c60bd375072c68f245",
+      "process_handle": "proc_3262f53ebe56",
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "effort": "high"
