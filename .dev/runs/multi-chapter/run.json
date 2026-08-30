@@ -1,6 +1,6 @@
 {
   "run_id": "multi-chapter",
-  "stage": "merge-ready",
+  "stage": "complete",
   "baseline": "2a2febb0871158a589d28bd24a5dcd81f5413d38",
   "review_baseline": "43eca004bbeb7d2d125d546a5d326f7b937d228a",
   "assignments": {
