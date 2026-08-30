@@ -53,6 +53,19 @@ Recommended uniqueness:
 
 unique (junto_id, user_id)
 
+## Atomic Junto bootstrap
+
+Junto creation reuses `juntos` and `junto_members`; it does not introduce a
+global administrator or ownership table. One transactional database function
+inserts an active Junto and creates or reactivates the authenticated creator's
+administrator membership. If either write fails, neither record persists.
+
+New Junto metadata is bounded at both the server and database boundaries:
+names are 1–120 trimmed characters, slugs are 1–63 lowercase alphanumeric
+segments separated by single hyphens, descriptions are at most 2,000
+characters, and locations are at most 240 characters. Archive visibility is
+`private` unless `public` is explicitly supplied.
+
 ## meetings
 
 id

@@ -44,6 +44,13 @@ The portal should allow the user to switch between Juntos when they have more th
 
 All group-scoped queries and permissions must use the currently selected junto_id.
 
+An authenticated user who already has at least one active administrator
+membership may create another Junto. Creation does not create a second account:
+the same global authenticated user becomes the first active administrator of the
+new Junto, then uses that Junto's invitation flow to add member or administrator
+memberships. Chapter creation and the first administrator membership are one
+atomic database operation; an unowned chapter must never be left behind.
+
 ## 3.4 Membership removal
 
 When a membership is deactivated:

@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { routes } from "@/config/routes";
+import { getChapterSettings } from "@/lib/chapters";
 import { listJuntoInvitations } from "@/lib/membership-admin";
 import { listActiveRoster } from "@/lib/memberships";
 import { requireJuntoAdmin } from "@/lib/portal-access";
 
 import styles from "../../content.module.css";
 import meetingStyles from "../meetings/meetings.module.css";
-import { deactivateMember, inviteMember } from "./actions";
+import { deactivateMember, inviteMember, saveChapterSettings } from "./actions";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -22,12 +23,20 @@ const ERROR_MESSAGES: Record<string, string> = {
   "already-pending": "That email already has a pending invitation.",
   "not-permitted": "You are not permitted to make that change.",
   "request-failed": "Nothing was changed. Check the details and try again.",
+  "name-invalid": "Enter a chapter name of 120 characters or fewer.",
+  "description-invalid": "Keep the description to 2,000 characters or fewer.",
+  "location-invalid": "Keep the location to 240 characters or fewer.",
+  "visibility-invalid": "Choose a valid archive visibility.",
+  "input-invalid": "Check the chapter details and try again.",
 };
 
 const STATUS_MESSAGES: Record<string, string> = {
   invited:
     "Invitation created. The approved person can now request a sign-in link.",
   deactivated: "Membership deactivated. Private access is revoked immediately.",
+  "chapter-created":
+    "Chapter created privately. You are its first admin; invite its approved members below.",
+  "settings-saved": "Chapter settings saved.",
 };
 
 function firstValue(value: string | string[] | undefined): string | undefined {
@@ -47,9 +56,10 @@ export default async function JuntoAdminPage({
   const { supabase, membership, userId } = await requireJuntoAdmin(
     (await params).juntoSlug,
   );
-  const [invitations, roster] = await Promise.all([
+  const [invitations, roster, chapter] = await Promise.all([
     listJuntoInvitations(supabase, membership.juntoId),
     listActiveRoster(supabase, membership.juntoId),
+    getChapterSettings(supabase, membership.juntoId),
   ]);
   const query = await searchParams;
   const error = firstValue(query.error);
@@ -74,6 +84,85 @@ export default async function JuntoAdminPage({
           {statusMessage}
         </p>
       ) : null}
+      <section aria-labelledby="admin-settings" className={styles.section}>
+        <h2 className={styles.sectionLabel} id="admin-settings">
+          Chapter settings
+        </h2>
+        <div className={styles.sectionBody}>
+          <p>
+            These settings apply only to the selected chapter. Status, deletion,
+            and ownership are not managed here.
+          </p>
+        </div>
+        <form
+          action={saveChapterSettings.bind(null, membership.juntoSlug)}
+          className={meetingStyles.form}
+        >
+          <div className={meetingStyles.field}>
+            <label className={meetingStyles.fieldLabel} htmlFor="settings-name">
+              Chapter name
+            </label>
+            <input
+              className={meetingStyles.input}
+              defaultValue={chapter.name}
+              id="settings-name"
+              maxLength={120}
+              name="name"
+              required
+            />
+          </div>
+          <div className={meetingStyles.field}>
+            <label
+              className={meetingStyles.fieldLabel}
+              htmlFor="settings-description"
+            >
+              Description
+            </label>
+            <textarea
+              className={meetingStyles.textarea}
+              defaultValue={chapter.description ?? ""}
+              id="settings-description"
+              maxLength={2000}
+              name="description"
+            />
+          </div>
+          <div className={meetingStyles.field}>
+            <label
+              className={meetingStyles.fieldLabel}
+              htmlFor="settings-location"
+            >
+              Location
+            </label>
+            <input
+              className={meetingStyles.input}
+              defaultValue={chapter.location ?? ""}
+              id="settings-location"
+              maxLength={240}
+              name="location"
+            />
+          </div>
+          <div className={meetingStyles.field}>
+            <label
+              className={meetingStyles.fieldLabel}
+              htmlFor="settings-archive-visibility"
+            >
+              Archive visibility
+            </label>
+            <select
+              className={meetingStyles.input}
+              defaultValue={chapter.archiveVisibility}
+              id="settings-archive-visibility"
+              name="archive-visibility"
+            >
+              <option value="private">Junto members only</option>
+              <option value="public">Public</option>
+            </select>
+          </div>
+          <button className={meetingStyles.submit} type="submit">
+            Save chapter settings
+          </button>
+        </form>
+      </section>
       <section aria-labelledby="admin-invitations" className={styles.section}>
         <h2 className={styles.sectionLabel} id="admin-invitations">
           Invitations

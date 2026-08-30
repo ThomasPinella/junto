@@ -6,6 +6,8 @@ import {
   createJuntoInvitation,
   deactivateJuntoMember,
 } from "@/lib/membership-admin";
+import { parseChapterSettingsForm } from "@/lib/chapter-domain";
+import { updateChapterSettings } from "@/lib/chapters";
 import { parseInvitationForm } from "@/lib/membership-domain";
 import { requireJuntoAdmin } from "@/lib/portal-access";
 
@@ -52,4 +54,24 @@ export async function deactivateMember(
     redirect(adminUrl(membership.juntoSlug, "error", result.errorKey));
   }
   redirect(adminUrl(membership.juntoSlug, "status", "deactivated"));
+}
+
+export async function saveChapterSettings(
+  juntoSlug: string,
+  formData: FormData,
+): Promise<void> {
+  const { supabase, membership } = await requireJuntoAdmin(juntoSlug);
+  const parsed = parseChapterSettingsForm(formData);
+  if (!parsed.ok) {
+    redirect(adminUrl(membership.juntoSlug, "error", parsed.errorKey));
+  }
+  const result = await updateChapterSettings(
+    supabase,
+    membership.juntoId,
+    parsed.input,
+  );
+  if (!result.ok) {
+    redirect(adminUrl(membership.juntoSlug, "error", result.errorKey));
+  }
+  redirect(adminUrl(membership.juntoSlug, "status", "settings-saved"));
 }

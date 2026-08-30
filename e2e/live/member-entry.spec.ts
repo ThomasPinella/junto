@@ -1,12 +1,22 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Browser,
+  type BrowserContext,
+  type Page,
+  type TestInfo,
+} from "@playwright/test";
 
 import {
+  CHAPTER_BOOTSTRAP,
+  INTEGRATED_MEMBER_EMAIL,
   JUNTO_A,
   JUNTO_B,
   JUNTO_C,
   MEMBER_EMAIL,
   UNINVITED_EMAIL,
   adminUsersByEmail,
+  chapterRecordBySlug,
   claimedInvitationCount,
   cleanupFixtures,
   clearMailbox,
@@ -14,9 +24,13 @@ import {
   latestAuthLinkFor,
   membershipCountForFixtureJuntos,
   resetFixtures,
+  restAsUser,
   verifyFixturesAbsent,
 } from "./fixtures";
-import { runExhaustiveLiveTeardown } from "./exhaustive-teardown";
+import {
+  closeBrowserContextsExhaustively,
+  runExhaustiveLiveTeardown,
+} from "./exhaustive-teardown";
 
 // These journeys drive the REAL local Supabase Auth (GoTrue), PostgREST, and
 // Mailpit stack through the production-built application: invitation-gated
@@ -31,6 +45,8 @@ import { runExhaustiveLiveTeardown } from "./exhaustive-teardown";
 test.describe.configure({ mode: "serial" });
 
 let context: BrowserContext | null = null;
+let memberClaimContext: BrowserContext | null = null;
+let adminClaimContext: BrowserContext | null = null;
 let page: Page;
 let isMobile: boolean;
 let appOrigin: string;
@@ -47,6 +63,51 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
     return root.scrollWidth - root.clientWidth;
   });
   expect(overflow).toBeLessThanOrEqual(1);
+}
+
+async function configuredContext(
+  browser: Browser,
+  testInfo: TestInfo,
+): Promise<BrowserContext> {
+  const use = testInfo.project.use;
+  return browser.newContext({
+    baseURL: use.baseURL,
+    viewport: use.viewport,
+    userAgent: use.userAgent,
+    isMobile: use.isMobile,
+    hasTouch: use.hasTouch,
+    deviceScaleFactor: use.deviceScaleFactor,
+  });
+}
+
+async function accessToken(browserContext: BrowserContext): Promise<string> {
+  const raw = decodeURIComponent(
+    (await browserContext.cookies())
+      .filter((cookie) => /^sb-.*-auth-token(\.\d+)?$/.test(cookie.name))
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true }),
+      )
+      .map((cookie) => cookie.value)
+      .join(""),
+  );
+  const json = raw.startsWith("base64-")
+    ? Buffer.from(raw.slice("base64-".length), "base64url").toString("utf8")
+    : raw;
+  const session = JSON.parse(json) as { access_token?: string };
+  if (!session.access_token) throw new Error("session carries no access token");
+  return session.access_token;
+}
+
+async function claimInvitation(
+  claimPage: Page,
+  email: string,
+  expectedLanding: string,
+): Promise<void> {
+  await clearMailbox();
+  await requestSignInLink(claimPage, email);
+  await expect(claimPage.getByText(/check your email/i).first()).toBeVisible();
+  await claimPage.goto(await latestAuthLinkFor(email));
+  await expect(claimPage).toHaveURL(expectedLanding);
 }
 
 test.beforeAll(async ({ browser }, testInfo) => {
@@ -70,7 +131,11 @@ test.beforeAll(async ({ browser }, testInfo) => {
 test.afterAll(async () => {
   await runExhaustiveLiveTeardown({
     closeBrowserContext: async () => {
-      if (context) await context.close();
+      await closeBrowserContextsExhaustively(
+        [context, memberClaimContext, adminClaimContext].filter(
+          (candidate): candidate is BrowserContext => candidate !== null,
+        ),
+      );
     },
     cleanupFixtures,
     verifyFixturesAbsent,
@@ -245,6 +310,178 @@ test("an authenticated session survives a reload", async () => {
   await expect(
     page.getByRole("heading", { level: 1, name: JUNTO_A.name }),
   ).toBeVisible();
+});
+
+test("an existing admin creates, switches, configures, invites, and grants only invitation-backed chapter access", async ({
+  browser,
+}, testInfo) => {
+  await page.goto(`/portal/${JUNTO_A.slug}`);
+  await page.getByRole("link", { name: "Create chapter" }).click();
+  await expect(page).toHaveURL("/portal/chapters/new");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Create a chapter" }),
+  ).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+
+  await page.getByLabel("Chapter name").fill(CHAPTER_BOOTSTRAP.name);
+  await page.getByLabel("Chapter URL").fill(CHAPTER_BOOTSTRAP.slug);
+  await page.getByLabel("Description").fill("A chapter created through T01.");
+  await page.getByLabel("Location").fill("Maple Room");
+  await expect(page.getByLabel("Archive visibility")).toHaveValue("private");
+  if (isMobile) {
+    const submitBox = await page
+      .getByRole("button", { name: "Create chapter" })
+      .boundingBox();
+    expect(submitBox).not.toBeNull();
+    expect(submitBox!.height).toBeGreaterThanOrEqual(44);
+  }
+  await page.getByRole("button", { name: "Create chapter" }).click();
+  await expect(page).toHaveURL(
+    `/portal/${CHAPTER_BOOTSTRAP.slug}/admin?status=chapter-created`,
+  );
+  await expect(page.getByText(CHAPTER_BOOTSTRAP.name).first()).toBeVisible();
+  await expect(page.getByText(/first admin/i).first()).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+
+  const created = await chapterRecordBySlug(CHAPTER_BOOTSTRAP.slug);
+  expect(created).toMatchObject({
+    name: CHAPTER_BOOTSTRAP.name,
+    description: "A chapter created through T01.",
+    location: "Maple Room",
+    archiveVisibility: "private",
+  });
+  if (!created) throw new Error("created chapter was not persisted");
+
+  const settings = page.locator("section", {
+    has: page.getByRole("heading", { name: "Chapter settings" }),
+  });
+  await settings.getByLabel("Chapter name").fill("T01 Maple Table");
+  await settings
+    .getByLabel("Description")
+    .fill("A bounded selected-chapter setting.");
+  await settings.getByLabel("Location").fill("Center City");
+  await settings.getByLabel("Archive visibility").selectOption("public");
+  await settings.getByRole("button", { name: "Save chapter settings" }).click();
+  await expect(page).toHaveURL(
+    `/portal/${CHAPTER_BOOTSTRAP.slug}/admin?status=settings-saved`,
+  );
+  expect(await chapterRecordBySlug(CHAPTER_BOOTSTRAP.slug)).toMatchObject({
+    name: "T01 Maple Table",
+    description: "A bounded selected-chapter setting.",
+    location: "Center City",
+    archiveVisibility: "public",
+  });
+
+  // The write was scoped to Maple: Alder's selected settings remain intact.
+  await page.goto(`/portal/${JUNTO_A.slug}/admin`);
+  const alderSettings = page.locator("section", {
+    has: page.getByRole("heading", { name: "Chapter settings" }),
+  });
+  await expect(alderSettings.getByLabel("Chapter name")).toHaveValue(
+    JUNTO_A.name,
+  );
+  await expect(alderSettings.getByLabel("Archive visibility")).toHaveValue(
+    "private",
+  );
+
+  await page.goto(`/portal/${CHAPTER_BOOTSTRAP.slug}/admin`);
+  const invitations = page.locator("section", {
+    has: page.getByRole("heading", { name: "Invitations" }),
+  });
+  const invitationForm = invitations.locator("form");
+
+  await invitationForm
+    .getByLabel("Email address")
+    .fill(INTEGRATED_MEMBER_EMAIL);
+  await invitationForm
+    .getByLabel("Role", { exact: true })
+    .selectOption("member");
+  await invitationForm.getByRole("checkbox").check();
+  await invitationForm.getByRole("button", { name: "Invite a member" }).click();
+  await expect(page.getByText(INTEGRATED_MEMBER_EMAIL)).toBeVisible();
+
+  await invitationForm.getByLabel("Email address").fill(UNINVITED_EMAIL);
+  await invitationForm
+    .getByLabel("Role", { exact: true })
+    .selectOption("admin");
+  await invitationForm.getByRole("checkbox").check();
+  await invitationForm.getByRole("button", { name: "Invite a member" }).click();
+  await expect(page.getByText(UNINVITED_EMAIL)).toBeVisible();
+
+  memberClaimContext = await configuredContext(browser, testInfo);
+  const memberPage = await memberClaimContext.newPage();
+  await claimInvitation(
+    memberPage,
+    INTEGRATED_MEMBER_EMAIL,
+    `/portal/${CHAPTER_BOOTSTRAP.slug}`,
+  );
+  await expect(memberPage.getByText("T01 Maple Table").first()).toBeVisible();
+  await expect(
+    memberPage.getByRole("navigation", { name: "Portal" }).getByText("Admin"),
+  ).toHaveCount(0);
+  for (const privateName of [JUNTO_A.name, JUNTO_B.name, JUNTO_C.name]) {
+    await expect(memberPage.getByText(privateName)).toHaveCount(0);
+  }
+  await memberPage.goto(`/portal/${CHAPTER_BOOTSTRAP.slug}/admin`);
+  await expect(memberPage).toHaveURL(`/portal/${CHAPTER_BOOTSTRAP.slug}`);
+
+  const memberToken = await accessToken(memberClaimContext);
+  const forbiddenSettings = await restAsUser(
+    memberToken,
+    `/rest/v1/juntos?id=eq.${created.id}`,
+    {
+      method: "PATCH",
+      prefer: "return=representation",
+      body: { name: "Member hijack" },
+    },
+  );
+  expect(forbiddenSettings.status).toBeLessThan(300);
+  expect(forbiddenSettings.json).toEqual([]);
+  const forbiddenBootstrap = await restAsUser(
+    memberToken,
+    "/rest/v1/rpc/bootstrap_junto",
+    {
+      method: "POST",
+      body: { chapter_name: "Member attempt", chapter_slug: "member-attempt" },
+    },
+  );
+  expect(forbiddenBootstrap.status).toBe(403);
+
+  adminClaimContext = await configuredContext(browser, testInfo);
+  const adminPage = await adminClaimContext.newPage();
+  await claimInvitation(
+    adminPage,
+    UNINVITED_EMAIL,
+    `/portal/${CHAPTER_BOOTSTRAP.slug}`,
+  );
+  await expect(
+    adminPage
+      .getByRole("navigation", { name: "Portal" })
+      .getByRole("link", { name: "Admin" }),
+  ).toBeVisible();
+  await adminPage.goto(`/portal/${JUNTO_A.slug}/admin`);
+  await expect(adminPage).toHaveURL(`/portal/${CHAPTER_BOOTSTRAP.slug}`);
+  await expect(adminPage.getByText(JUNTO_A.name)).toHaveCount(0);
+
+  const adminToken = await accessToken(adminClaimContext);
+  const crossChapterPatch = await restAsUser(
+    adminToken,
+    `/rest/v1/juntos?id=eq.${JUNTO_A.id}`,
+    {
+      method: "PATCH",
+      prefer: "return=representation",
+      body: { name: "Cross-chapter hijack" },
+    },
+  );
+  expect(crossChapterPatch.status).toBeLessThan(300);
+  expect(crossChapterPatch.json).toEqual([]);
+
+  await expectNoHorizontalOverflow(memberPage);
+  await expectNoHorizontalOverflow(adminPage);
+
+  // Restore the original story's two memberships while leaving the created
+  // chapter and invitation-backed claimants for exhaustive teardown.
+  await deactivateMembership(created.id, MEMBER_EMAIL);
 });
 
 test("deactivation denies the portal on the very next request", async () => {

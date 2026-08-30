@@ -25,6 +25,9 @@ export default async function JuntoPortalLayout({
   const { juntoSlug } = await params;
   const { membership, memberships } = await requireJuntoMembership(juntoSlug);
   const navItems = portalNavItems(membership.juntoSlug, membership.role);
+  const canCreateChapter = memberships.some(
+    (candidate) => candidate.role === "admin",
+  );
 
   return (
     <div className={styles.frame}>
@@ -83,6 +86,14 @@ export default async function JuntoPortalLayout({
                 ))}
               </ul>
             </nav>
+          ) : null}
+          {canCreateChapter ? (
+            <Link
+              className={styles.switcherLink}
+              href={routes.portalChapterNew}
+            >
+              Create chapter
+            </Link>
           ) : null}
         </div>
       </header>

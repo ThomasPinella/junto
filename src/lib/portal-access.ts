@@ -50,6 +50,14 @@ export async function requirePortalUser(
   return context;
 }
 
+export async function requireChapterCreator(): Promise<PortalContext> {
+  const context = await requirePortalUser(routes.portalChapterNew);
+  if (!context.memberships.some((membership) => membership.role === "admin")) {
+    redirect(routes.portal);
+  }
+  return context;
+}
+
 export interface JuntoPortalContext extends PortalContext {
   membership: ActiveMembership;
 }

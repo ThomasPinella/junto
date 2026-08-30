@@ -10,6 +10,7 @@ describe("routes", () => {
     expect(routes.authors).toBe("/authors");
     expect(routes.about).toBe("/about");
     expect(routes.portal).toBe("/portal");
+    expect(routes.portalChapterNew).toBe("/portal/chapters/new");
   });
 
   it("places chapter pages under /juntos/[juntoSlug]", () => {
@@ -40,6 +41,9 @@ describe("routes", () => {
   });
 
   it("scopes private meeting routes to the selected Junto", () => {
+    expect(routes.portalAdmin("philadelphia")).toBe(
+      "/portal/philadelphia/admin",
+    );
     expect(routes.portalMeetings("philadelphia")).toBe(
       "/portal/philadelphia/meetings",
     );

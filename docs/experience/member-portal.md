@@ -15,6 +15,19 @@ Admins additionally see:
 
 Admin
 
+Eligible administrators also have a persistent **Create chapter** entry. The
+creation form asks for name, stable slug, optional description and location,
+and archive visibility, with **Junto members only** selected by default. On
+success the new chapter becomes the selected context and opens its Admin area,
+where the creator can immediately invite approved member or administrator email
+addresses through the existing mailbox-verified invitation flow.
+
+The selected chapter's Admin area includes bounded chapter settings for name,
+description, location, and archive visibility. It does not expose chapter
+status, deletion, or ownership transfer. Switching chapters rechecks the live
+membership and role for the newly selected Junto; private chapter names are not
+shown before authentication or outside authorized active memberships.
+
 ## Portal home
 
 The home view can show:

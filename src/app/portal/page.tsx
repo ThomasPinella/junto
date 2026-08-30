@@ -15,6 +15,9 @@ import styles from "./content.module.css";
 // end with nothing private to see.
 export default async function PortalEntryPage() {
   const { memberships } = await requirePortalUser();
+  const canCreateChapter = memberships.some(
+    (membership) => membership.role === "admin",
+  );
 
   const only = memberships.length === 1 ? memberships[0] : undefined;
   if (only) {
@@ -66,6 +69,12 @@ export default async function PortalEntryPage() {
             </li>
           ))}
         </ul>
+        {canCreateChapter ? (
+          <p className={styles.footnote}>
+            Administrate another chapter?{" "}
+            <Link href={routes.portalChapterNew}>Create a chapter</Link>.
+          </p>
+        ) : null}
       </article>
     </PortalFrame>
   );

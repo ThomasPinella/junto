@@ -71,3 +71,28 @@ state. Administrators may not rewrite essay bodies and may not delete essays
 in this MVP slice.
 
 Never use a global application-wide admin assumption for ordinary Junto management.
+
+## Junto creation
+
+Junto creation is the one cross-chapter capability derived from an existing
+chapter role: any authenticated user with at least one live, active `admin`
+membership may bootstrap another Junto. The database function is authoritative
+and must:
+
+- derive the caller from `auth.uid()`;
+- independently prove an existing active administrator membership before
+  validating identifiers or attempting writes;
+- accept chapter metadata only, never user, role, status, ownership, or Junto
+  identity fields from the client;
+- insert the active Junto and caller's active administrator membership in one
+  transaction;
+- use an empty `search_path`, fully qualified relations, and an execute grant
+  limited to `authenticated`;
+- reject unauthenticated users, ordinary members, and inactive former admins
+  without disclosing whether a requested private slug exists.
+
+After bootstrap, ordinary authorization remains membership- and Junto-scoped.
+An administrator of one Junto cannot read or change a private second Junto
+unless they also have an active membership there. Selected-chapter settings
+updates are limited in the application to name, description, location, and
+archive visibility and continue through the existing admin-scoped RLS policy.

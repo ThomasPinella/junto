@@ -87,6 +87,10 @@ export const ESSAY_ADMIN_EMAIL = "c11-t05-admin@example.com";
 export const PUBLIC_AUTHOR_A_EMAIL = "c17-public-maya@example.com";
 export const PUBLIC_AUTHOR_B_EMAIL = "c17-public-daniel@example.com";
 export const INTEGRATED_MEMBER_EMAIL = "c22-t08-invitee@example.com";
+export const CHAPTER_BOOTSTRAP = {
+  slug: "t01-maple",
+  name: "T01 Maple",
+} as const;
 
 const FIXTURE_JUNTOS = [
   JUNTO_A,
@@ -333,6 +337,52 @@ const UUID_SHAPE =
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export interface FixtureChapterRecord {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  location: string | null;
+  archiveVisibility: "private" | "public";
+}
+
+export async function chapterRecordBySlug(
+  slug: string,
+): Promise<FixtureChapterRecord | null> {
+  const res = await restFetch(
+    `/rest/v1/juntos?slug=eq.${encodeURIComponent(slug)}` +
+      "&select=id,name,slug,description,location,archive_visibility",
+  );
+  if (res.status >= 300 || !Array.isArray(res.json)) {
+    throw new Error(`chapter fixture lookup failed (HTTP ${res.status})`);
+  }
+  if (res.json.length === 0) return null;
+  if (res.json.length !== 1 || !isRecord(res.json[0])) {
+    throw new Error("chapter fixture lookup returned an invalid row count");
+  }
+  const row = res.json[0];
+  if (
+    typeof row.id !== "string" ||
+    !UUID_SHAPE.test(row.id) ||
+    typeof row.name !== "string" ||
+    typeof row.slug !== "string" ||
+    (row.description !== null && typeof row.description !== "string") ||
+    (row.location !== null && typeof row.location !== "string") ||
+    (row.archive_visibility !== "private" &&
+      row.archive_visibility !== "public")
+  ) {
+    throw new Error("chapter fixture lookup returned malformed data");
+  }
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    description: row.description,
+    location: row.location,
+    archiveVisibility: row.archive_visibility,
+  };
 }
 
 interface AdminUser {
@@ -680,7 +730,12 @@ export async function cleanupFixtures(): Promise<void> {
       throw new Error(`HTTP ${res.status}`);
     }
   };
-  const idFilter = `in.(${FIXTURE_JUNTO_IDS.join(",")})`;
+  const cleanupJuntoIds: string[] = [...FIXTURE_JUNTO_IDS];
+  await attempt("discover bootstrap chapter", async () => {
+    const chapter = await chapterRecordBySlug(CHAPTER_BOOTSTRAP.slug);
+    if (chapter) cleanupJuntoIds.push(chapter.id);
+  });
+  const idFilter = `in.(${cleanupJuntoIds.join(",")})`;
 
   // Essays first: they reference meetings, juntos, and auth users (authors
   // have no cascade), and this also removes essays the journeys created
@@ -792,6 +847,12 @@ export async function verifyFixturesAbsent(): Promise<void> {
   );
   await check(() =>
     expectEmptyRest("juntos", `/rest/v1/juntos?id=${idFilter}&select=id`),
+  );
+  await check(() =>
+    expectEmptyRest(
+      "bootstrap junto",
+      `/rest/v1/juntos?slug=eq.${CHAPTER_BOOTSTRAP.slug}&select=id`,
+    ),
   );
   for (const email of FIXTURE_EMAILS) {
     await check(async () => {

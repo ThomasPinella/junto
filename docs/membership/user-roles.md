@@ -48,6 +48,8 @@ An admin is a member with administrative permissions for a particular Junto.
 
 An admin can:
 
+- create another Junto while at least one of their administrator memberships
+  remains active;
 - create and edit meetings;
 - invite or allowlist members;
 - deactivate memberships;
@@ -56,5 +58,12 @@ An admin can:
 - remove chat messages when necessary;
 - manage basic Junto settings;
 - assign or revoke administrative roles.
+
+Creating a Junto makes the creator its first active administrator. This is not
+a global platform role: the creator's ongoing management authority over every
+Junto, including the new one, still comes from a separate live, active
+administrator membership in that Junto. Basic settings are limited to name,
+description, location, and archive visibility; status, deletion, and ownership
+transfer are not chapter-admin controls in this flow.
 
 An admin in one Junto has no administrative rights in another Junto unless separately granted.

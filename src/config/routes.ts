@@ -9,6 +9,7 @@ export const routes = {
   authors: "/authors",
   about: "/about",
   portal: "/portal",
+  portalChapterNew: "/portal/chapters/new",
   portalSignIn: "/portal/sign-in",
   authCallback: "/auth/callback",
   junto(juntoSlug: string): string {
@@ -24,6 +25,9 @@ export const routes = {
   },
   portalJunto(juntoSlug: string): `/portal/${string}` {
     return `/portal/${encodeURIComponent(juntoSlug)}`;
+  },
+  portalAdmin(juntoSlug: string): `/portal/${string}` {
+    return `/portal/${encodeURIComponent(juntoSlug)}/admin`;
   },
   portalMeetings(juntoSlug: string): `/portal/${string}` {
     return `/portal/${encodeURIComponent(juntoSlug)}/meetings`;
