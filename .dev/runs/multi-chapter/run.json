@@ -7,12 +7,12 @@
     "C01": {
       "task": "T01",
       "role": "builder",
-      "state": "ready",
+      "state": "running",
       "branch": "dev/multi-chapter-t01",
       "worktree": "/home/thomas/projects/junto-worktrees/multi-chapter-t01",
-      "base": null,
+      "base": "a16b63504c66445b57ad11a296e0a3baffbd6efa",
       "result": null,
-      "process_handle": null,
+      "process_handle": "proc_03557a903f30",
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "effort": "high"
@@ -20,12 +20,12 @@
     "C02": {
       "task": "T02",
       "role": "builder",
-      "state": "ready",
+      "state": "running",
       "branch": "dev/multi-chapter-t02",
       "worktree": "/home/thomas/projects/junto-worktrees/multi-chapter-t02",
-      "base": null,
+      "base": "a16b63504c66445b57ad11a296e0a3baffbd6efa",
       "result": null,
-      "process_handle": null,
+      "process_handle": "proc_049a07715dce",
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "effort": "high"
