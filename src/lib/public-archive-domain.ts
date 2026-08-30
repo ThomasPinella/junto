@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { essaySlugSchema, type PublicEssay } from "@/lib/essay-domain";
 import { juntoSlugSchema } from "@/lib/env";
-import { meetingDateSchema } from "@/lib/meeting-domain";
+import { formatMeetingDate, meetingDateSchema } from "@/lib/meeting-domain";
 
 export const authorSlugSchema = essaySlugSchema;
 
@@ -120,6 +120,47 @@ export interface ArchiveFilters {
   juntoSlug?: string;
   authorSlug?: string;
   meetingDate?: string;
+}
+
+export function archiveFilterMessage(
+  filters: ArchiveFilters,
+  eligibleEssays: PublicEssay[],
+): string | null {
+  const filtered = Boolean(
+    filters.juntoSlug || filters.authorSlug || filters.meetingDate,
+  );
+  if (!filtered) return null;
+  if (eligibleEssays.length === 0) return "No public essays match this view.";
+
+  if (filters.meetingDate) {
+    const meetingTitle = filters.juntoSlug
+      ? eligibleEssays
+          .find((essay) => essay.meetingTitle?.trim())
+          ?.meetingTitle?.trim()
+      : null;
+    return meetingTitle
+      ? `Showing essays from ${meetingTitle}.`
+      : `Showing essays from meetings on ${formatMeetingDate(filters.meetingDate)}.`;
+  }
+
+  const firstEssay = eligibleEssays[0]!;
+  if (filters.juntoSlug) {
+    return `Showing essays from ${firstEssay.juntoName}.`;
+  }
+  if (filters.authorSlug) {
+    return `Showing essays by ${firstEssay.authorName}.`;
+  }
+  return null;
+}
+
+export function orderChaptersByPreference<
+  Chapter extends { slug: string; name: string },
+>(chapters: Chapter[], preferredSlug: string): Chapter[] {
+  return [...chapters].sort((a, b) => {
+    if (a.slug === preferredSlug) return -1;
+    if (b.slug === preferredSlug) return 1;
+    return a.name.localeCompare(b.name);
+  });
 }
 
 export function parseArchiveFilters(

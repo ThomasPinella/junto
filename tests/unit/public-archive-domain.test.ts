@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  archiveFilterMessage,
   buildPublicArchive,
   estimateReadingMinutes,
+  orderChaptersByPreference,
   parseArchiveFilters,
   relatedPublicEssays,
 } from "@/lib/public-archive-domain";
@@ -90,6 +92,70 @@ describe("public archive domain", () => {
       { slug: "philadelphia", name: "Philadelphia Junto" },
     ]);
     expect(maya?.meetings).toHaveLength(3);
+  });
+
+  it("labels same-date cross-chapter filters neutrally unless chapter-scoped", () => {
+    const bostonEssay: PublicEssay = {
+      ...essays[0]!,
+      slug: "attention-in-boston",
+      juntoName: "Boston Junto",
+      juntoSlug: "boston",
+      meetingTitle: "Attention in common",
+    };
+    const sameDateEssays = [bostonEssay, essays[0]!];
+
+    expect(
+      archiveFilterMessage({ meetingDate: "2026-07-12" }, sameDateEssays),
+    ).toBe("Showing essays from meetings on July 12, 2026.");
+    expect(
+      archiveFilterMessage({ juntoSlug: "boston", meetingDate: "2026-07-12" }, [
+        bostonEssay,
+      ]),
+    ).toBe("Showing essays from Attention in common.");
+    expect(
+      archiveFilterMessage({ juntoSlug: "boston", meetingDate: "2026-07-12" }, [
+        { ...bostonEssay, meetingTitle: "" },
+      ]),
+    ).toBe("Showing essays from meetings on July 12, 2026.");
+    expect(archiveFilterMessage({ juntoSlug: "boston" }, [bostonEssay])).toBe(
+      "Showing essays from Boston Junto.",
+    );
+    expect(
+      archiveFilterMessage({ authorSlug: "maya-chen" }, [bostonEssay]),
+    ).toBe("Showing essays by Maya Chen.");
+    expect(archiveFilterMessage({ meetingDate: "2026-07-12" }, [])).toBe(
+      "No public essays match this view.",
+    );
+  });
+
+  it("keeps every eligible chapter in name order when the preference is absent", () => {
+    const eligibleChapters = [
+      { slug: "philadelphia", name: "Philadelphia Junto" },
+      { slug: "boston", name: "Boston Junto" },
+    ];
+    const ordered = orderChaptersByPreference(eligibleChapters, "private");
+
+    expect(ordered).toEqual([
+      { slug: "boston", name: "Boston Junto" },
+      { slug: "philadelphia", name: "Philadelphia Junto" },
+    ]);
+    expect(
+      ordered.find((chapter) => chapter.slug === "private"),
+    ).toBeUndefined();
+  });
+
+  it("prioritizes only an exact eligible chapter match without dropping others", () => {
+    const eligibleChapters = [
+      { slug: "philadelphia", name: "Philadelphia Junto" },
+      { slug: "boston", name: "Boston Junto" },
+      { slug: "chicago", name: "Chicago Junto" },
+    ];
+
+    expect(orderChaptersByPreference(eligibleChapters, "chicago")).toEqual([
+      { slug: "chicago", name: "Chicago Junto" },
+      { slug: "boston", name: "Boston Junto" },
+      { slug: "philadelphia", name: "Philadelphia Junto" },
+    ]);
   });
 
   it("keeps related content separate and excludes the current essay", () => {

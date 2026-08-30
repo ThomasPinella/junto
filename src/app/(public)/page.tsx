@@ -9,12 +9,11 @@ import {
   meetingDisplayName,
   type PublicMeeting,
 } from "@/lib/meeting-domain";
+import { listPublicJuntos, listPublicMeetings } from "@/lib/meetings";
 import {
-  listPublicJuntos,
-  listPublicMeetings,
-  type PublicJunto,
-} from "@/lib/meetings";
-import { buildPublicArchive } from "@/lib/public-archive-domain";
+  buildPublicArchive,
+  orderChaptersByPreference,
+} from "@/lib/public-archive-domain";
 import { createSupabaseAnonClient } from "@/lib/supabase/server";
 
 import styles from "./page.module.css";
@@ -48,17 +47,6 @@ async function loadNetwork(initialJuntoSlug: string) {
   }
 }
 
-function orderChapters(
-  chapters: PublicJunto[],
-  initialJuntoSlug: string,
-): PublicJunto[] {
-  return [...chapters].sort((a, b) => {
-    if (a.slug === initialJuntoSlug) return -1;
-    if (b.slug === initialJuntoSlug) return 1;
-    return a.name.localeCompare(b.name);
-  });
-}
-
 function featuredMeeting(
   meetings: PublicMeeting[],
   archiveMeetings: ReturnType<typeof buildPublicArchive>["meetings"],
@@ -81,7 +69,10 @@ function featuredMeeting(
 export default async function HomePage() {
   const site = siteConfig();
   const network = await loadNetwork(site.initialJuntoSlug);
-  const chapters = orderChapters(network.chapters, site.initialJuntoSlug);
+  const chapters = orderChaptersByPreference(
+    network.chapters,
+    site.initialJuntoSlug,
+  );
   const initialChapter = chapters.find(
     (chapter) => chapter.slug === site.initialJuntoSlug,
   );
