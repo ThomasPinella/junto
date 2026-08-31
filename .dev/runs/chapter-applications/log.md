@@ -13,3 +13,7 @@
 - 2026-08-31 05:53 UTC — Local Supabase stopped and loopback listeners verified absent; V01 dispatched read-only over `2f9aebe..4954e02` with Codex GPT-5.6 Sol, high effort.
 - 2026-08-31 06:01 UTC — V01 failed with one qualifying medium privacy finding: anonymous RPC/UI outcomes disclose whether an arbitrary normalized email already has a pending application; all other reviewed surfaces passed.
 - 2026-08-31 06:01 UTC — C03 dispatched from `58e3c4e` to make fresh/duplicate/honeypot anonymous RPC success indistinguishable, preserve one pending row, and make reviewer notification generic.
+- 2026-08-31 06:46 UTC — C03 completed as `081bbaf` and integrated as `7b6cbfb`; fresh/duplicate/honeypot return fieldless void/HTTP 204, duplicate writes are atomic no-ops, and generic review email contains no submitted details.
+- 2026-08-31 06:46 UTC — Exact corrected candidate passed independent format/lint/typecheck, 25 focused unit, 60 focused pgTAP, 241 full unit, 463 full pgTAP, 186 safety, 19 real Auth, 62 stack-free browser (+2 skips), 132 live browser, 1 fixture-absence, build/probe, schema lint/advisors, diff check, and teardown.
+- 2026-08-31 06:46 UTC — Two transient verification failures were root-caused without code changes: persistent placeholder Supabase exports prevented the app request reaching loopback; a deliberate direct-RPC diagnostic row changed pgTAP counts. Exact loopback reload and clean DB reset passed unchanged.
+- 2026-08-31 06:46 UTC — R02 dispatched read-only over `58e3c4e..7b6cbfb` for incremental privacy/security reconciliation.

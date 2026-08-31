@@ -1,13 +1,14 @@
 {
   "run_id": "chapter-applications",
-  "stage": "correcting-review",
+  "stage": "reconciling-privacy-correction",
   "baseline": "2f9aebe237445128a0fd58e72e1bcd4635d5b08a",
-  "review_baseline": "9a51a35a33af2c73b6655721690dc65a6bbf647a",
+  "review_baseline": "7b6cbfba99e556cfe83de294b44d636b9c238ce5",
   "assignments": {
     "C01": {"task":"T01","role":"builder","state":"integrated","base":"357ff635e29b7190435a7d002bbd85d3e9ffecdc","result":"42f4545","integrated_result":"5f39623","process_handle":"proc_a7df5002d59c","provider":"openai","model":"gpt-5.6-sol","effort":"high"},
-    "R01": {"task":"T01","role":"reconciler","state":"complete","base":"357ff635e29b7190435a7d002bbd85d3e9ffecdc","result":"42f4545","process_handle":"proc_9ad41bb1e32f","provider":"openai","model":"gpt-5.6-sol","effort":"high","verdict":"correction-required"},
+    "R01": {"task":"T01","role":"reconciler","state":"complete","result":"42f4545","process_handle":"proc_9ad41bb1e32f","verdict":"correction-required"},
     "C02": {"task":"T01-correction","role":"builder","state":"integrated","base":"42f4545","result":"7314942","integrated_result":"9a51a35","process_handle":"proc_3067190aaa76","provider":"openai","model":"gpt-5.6-sol","effort":"high"},
-    "V01": {"role":"reviewer","state":"complete","range":"2f9aebe237445128a0fd58e72e1bcd4635d5b08a..4954e02","process_handle":"proc_deb2b85ceb5f","provider":"openai","model":"gpt-5.6-sol","effort":"high","verdict":"fail"},
-    "C03": {"task":"V01-privacy-correction","role":"builder","state":"running","branch":"dev/chapter-applications-t03","worktree":"/home/thomas/projects/junto-worktrees/chapter-applications-t03","base":"58e3c4e9532a6d59073991702657836f2d45f3ee","result":null,"process_handle":"proc_e80c8ebf9db0","provider":"openai","model":"gpt-5.6-sol","effort":"high"}
+    "V01": {"role":"reviewer","state":"complete","range":"2f9aebe237445128a0fd58e72e1bcd4635d5b08a..4954e02","process_handle":"proc_deb2b85ceb5f","verdict":"fail"},
+    "C03": {"task":"V01-privacy-correction","role":"builder","state":"integrated","branch":"dev/chapter-applications-t03","worktree":"/home/thomas/projects/junto-worktrees/chapter-applications-t03","base":"58e3c4e9532a6d59073991702657836f2d45f3ee","result":"081bbafd0c64096480a4d65fdd82e7c7070324c2","integrated_result":"7b6cbfba99e556cfe83de294b44d636b9c238ce5","process_handle":"proc_e80c8ebf9db0","provider":"openai","model":"gpt-5.6-sol","effort":"high"},
+    "R02": {"role":"reconciler","state":"running","range":"58e3c4e9532a6d59073991702657836f2d45f3ee..7b6cbfba99e556cfe83de294b44d636b9c238ce5","process_handle":"proc_e7b310253b81","provider":"openai","model":"gpt-5.6-sol","effort":"high"}
   }
 }
