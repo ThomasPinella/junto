@@ -1,15 +1,15 @@
 {
   "run_id": "chapter-applications",
-  "stage": "final-review",
+  "stage": "correction",
   "baseline": "2f9aebe237445128a0fd58e72e1bcd4635d5b08a",
-  "review_baseline": "7b6cbfba99e556cfe83de294b44d636b9c238ce5",
-  "assignments": {
-    "C01": {"task":"T01","role":"builder","state":"integrated","result":"42f4545","integrated_result":"5f39623","process_handle":"proc_a7df5002d59c"},
-    "R01": {"role":"reconciler","state":"complete","result":"42f4545","process_handle":"proc_9ad41bb1e32f","verdict":"correction-required"},
-    "C02": {"role":"builder","state":"integrated","base":"42f4545","result":"7314942","integrated_result":"9a51a35","process_handle":"proc_3067190aaa76"},
-    "V01": {"role":"reviewer","state":"complete","range":"2f9aebe237445128a0fd58e72e1bcd4635d5b08a..4954e02","process_handle":"proc_deb2b85ceb5f","verdict":"fail"},
-    "C03": {"role":"builder","state":"integrated","base":"58e3c4e9532a6d59073991702657836f2d45f3ee","result":"081bbafd0c64096480a4d65fdd82e7c7070324c2","integrated_result":"7b6cbfba99e556cfe83de294b44d636b9c238ce5","process_handle":"proc_e80c8ebf9db0"},
-    "R02": {"role":"reconciler","state":"complete","range":"58e3c4e9532a6d59073991702657836f2d45f3ee..7b6cbfba99e556cfe83de294b44d636b9c238ce5","process_handle":"proc_e7b310253b81","verdict":"pass"},
-    "V02": {"role":"reviewer","state":"running","range":"2f9aebe237445128a0fd58e72e1bcd4635d5b08a..f5402ed","process_handle":"proc_566183517261","provider":"openai","model":"gpt-5.6-sol","effort":"high"}
-  }
+  "review_baseline": "150e76cf154555427401daa24f6a5219ce82fa66",
+  "assignment": "C04",
+  "reviewer": "V02",
+  "status": "running",
+  "branch": "dev/chapter-applications",
+  "email_sender": "Junto <applications@thomaspinella.com>",
+  "email_recipient": "txpinella@gmail.com",
+  "email_provider_validation_id": "e324f41d-18cf-496f-ac10-869d294367f9",
+  "production_applications_slug_conflict": "guarded_transactionally_by_migration",
+  "updated_at": "2026-08-31T07:46:54Z"
 }
