@@ -8,9 +8,10 @@ const slugSchema = z
   .min(1)
   .max(63)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-  // `/portal/sign-in` is static; see docs/architecture/data-model.md,
+  // `/portal/sign-in` and `/portal/applications` are static; see
+  // docs/architecture/data-model.md,
   // "Atomic Junto bootstrap."
-  .refine((slug) => slug !== "sign-in");
+  .refine((slug) => slug !== "sign-in" && slug !== "applications");
 const descriptionSchema = z.string().trim().max(2000);
 const locationSchema = z.string().trim().max(240);
 

@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(53);
+select plan(57);
 
 insert into auth.users
   (instance_id, id, aud, role, email, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
@@ -113,29 +113,29 @@ select throws_ok(
   '37. reviewer authorization wins before malformed decision validation'
 );
 select throws_ok(
-  $$select * from public.decide_chapter_application(current_setting('junto.test_application_id')::uuid,'approve','sign-in')$$,
+  $$select * from public.decide_chapter_application(current_setting('junto.test_application_id')::uuid,'approve','applications')$$,
   '42501', null,
-  '38. reviewer authorization wins before reserved-slug validation'
+  '38. reviewer authorization wins before the applications reserved-slug validation'
 );
 reset role;
 
 select set_config('request.jwt.claims', json_build_object('sub','a9000000-0000-4000-a000-000000000001','role','authenticated')::text, true);
 set local role authenticated;
 select lives_ok(
-  $$select * from public.decide_chapter_application(current_setting('junto.test_application_id')::uuid,'approve','junto-oak')$$,
-  '39. the reviewer can approve a pending application'
+  $$select * from public.decide_chapter_application(current_setting('junto.test_application_id')::uuid,'approve','applications-circle')$$,
+  '39. the reviewer can approve the nearby applications-circle slug'
 );
 reset role;
 
-select is((select name || '|' || location || '|' || archive_visibility || '|' || status from public.juntos where slug='junto-oak'), 'Junto Oak|Philadelphia|private|active', '40. approval creates the requested private active chapter');
+select is((select name || '|' || location || '|' || archive_visibility || '|' || status from public.juntos where slug='applications-circle'), 'Junto Oak|Philadelphia|private|active', '40. approval creates the requested private active chapter');
 select is(
   (select role || '|' || status || '|' || email_normalized || '|' || invited_by::text
-     from public.junto_invitations where junto_id=(select id from public.juntos where slug='junto-oak')),
+     from public.junto_invitations where junto_id=(select id from public.juntos where slug='applications-circle')),
   'admin|pending|applicant@example.com|a9000000-0000-4000-a000-000000000001',
   '41. approval creates the pending applicant admin invitation with reviewer evidence'
 );
 select ok(
-  (select status='approved' and reviewed_by='a9000000-0000-4000-a000-000000000001' and reviewed_at is not null and junto_id=(select id from public.juntos where slug='junto-oak') from public.chapter_applications where applicant_email_normalized='applicant@example.com'),
+  (select status='approved' and reviewed_by='a9000000-0000-4000-a000-000000000001' and reviewed_at is not null and junto_id=(select id from public.juntos where slug='applications-circle') from public.chapter_applications where applicant_email_normalized='applicant@example.com'),
   '42. approval records complete durable decision evidence'
 );
 
@@ -147,7 +147,7 @@ select throws_ok(
   '43. an already-decided application cannot be decided again'
 );
 reset role;
-select is((select count(*)::int from public.juntos where slug='junto-oak'), 1, '44. repeated decisions create no duplicate chapter');
+select is((select count(*)::int from public.juntos where slug='applications-circle'), 1, '44. repeated decisions create no duplicate chapter');
 
 insert into public.chapter_applications (id, chapter_name, location, applicant_email_normalized, intent_note)
 values ('a9000000-0000-4000-a000-000000000011', 'Collision Table', 'Boston', 'collision@example.com', 'Collision proof.');
@@ -204,6 +204,23 @@ select ok(
   '52. decline persists complete decision evidence without a chapter'
 );
 select is((select count(*)::int from public.junto_invitations where email_normalized='declined@example.com'), 0, '53. decline creates no invitation');
+
+insert into public.chapter_applications (id, chapter_name, location, applicant_email_normalized, intent_note)
+values ('a9000000-0000-4000-a000-000000000014', 'Reserved Route', 'Austin', 'reserved@example.com', 'Reserved-slug proof.');
+select set_config('request.jwt.claims', json_build_object('sub','a9000000-0000-4000-a000-000000000001','role','authenticated')::text, true);
+set local role authenticated;
+select throws_ok(
+  $$select * from public.decide_chapter_application('a9000000-0000-4000-a000-000000000014','approve','applications')$$,
+  '22023', null,
+  '54. the reviewer cannot approve an application with the static applications slug'
+);
+reset role;
+select ok(
+  (select status='pending' and reviewed_by is null and reviewed_at is null and junto_id is null from public.chapter_applications where applicant_email_normalized='reserved@example.com'),
+  '55. reserved-slug approval failure leaves the application pending'
+);
+select is((select count(*)::int from public.juntos where slug='applications'), 0, '56. reserved-slug approval failure creates no chapter');
+select is((select count(*)::int from public.junto_invitations where email_normalized='reserved@example.com'), 0, '57. reserved-slug approval failure creates no invitation');
 
 select * from finish();
 rollback;

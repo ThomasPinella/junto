@@ -13,7 +13,7 @@ const chapterSlugSchema = z
   .min(1)
   .max(63)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-  .refine((slug) => slug !== "sign-in");
+  .refine((slug) => slug !== "sign-in" && slug !== "applications");
 
 export interface ChapterApplicationInput {
   chapterName: string;

@@ -2,6 +2,16 @@
 -- receive only the bounded submit RPC; the exact verified reviewer receives
 -- only the list/decision RPCs (docs/architecture/authorization.md,
 -- "Chapter applications").
+-- The new static reviewer route also reserves its exact first path segment.
+-- NOT VALID protects new writes immediately; explicit validation makes the
+-- migration fail rather than preserve a pre-existing conflicting chapter.
+alter table public.juntos
+  add constraint juntos_slug_not_applications
+  check (slug <> 'applications') not valid;
+
+alter table public.juntos
+  validate constraint juntos_slug_not_applications;
+
 create table public.chapter_applications (
   id uuid primary key default gen_random_uuid(),
   chapter_name text not null
@@ -203,7 +213,7 @@ begin
     approved_chapter_slug is null
     or approved_chapter_slug <> btrim(approved_chapter_slug)
     or char_length(approved_chapter_slug) not between 1 and 63
-    or approved_chapter_slug = 'sign-in'
+    or approved_chapter_slug in ('sign-in', 'applications')
     or approved_chapter_slug !~ '^[a-z0-9]+(-[a-z0-9]+)*$'
   ) then
     raise exception 'Invalid chapter slug' using errcode = '22023';

@@ -74,26 +74,38 @@ describe("chapter application validation", () => {
     });
   });
 
-  it("derives an editable bounded slug and preserves the reserved slug rule", () => {
+  it("derives an editable bounded slug and preserves exact reserved slugs", () => {
     expect(deriveChapterSlug("  Société & Oak Table  ")).toBe(
       "societe-oak-table",
     );
     expect(deriveChapterSlug("***")).toBe("chapter");
     const applicationId = "11111111-2222-4333-8444-555555555555";
+    for (const chapterSlug of ["sign-in", "applications"]) {
+      expect(
+        parseApplicationDecisionForm(
+          form({
+            "application-id": applicationId,
+            "chapter-slug": chapterSlug,
+          }),
+          "approve",
+        ),
+      ).toEqual({ ok: false, errorKey: "slug-invalid" });
+    }
     expect(
       parseApplicationDecisionForm(
-        form({ "application-id": applicationId, "chapter-slug": "sign-in" }),
-        "approve",
-      ),
-    ).toEqual({ ok: false, errorKey: "slug-invalid" });
-    expect(
-      parseApplicationDecisionForm(
-        form({ "application-id": applicationId, "chapter-slug": "oak-table" }),
+        form({
+          "application-id": applicationId,
+          "chapter-slug": "applications-circle",
+        }),
         "approve",
       ),
     ).toEqual({
       ok: true,
-      input: { applicationId, decision: "approve", chapterSlug: "oak-table" },
+      input: {
+        applicationId,
+        decision: "approve",
+        chapterSlug: "applications-circle",
+      },
     });
   });
 

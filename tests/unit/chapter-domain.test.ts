@@ -65,18 +65,23 @@ describe("parseChapterForm", () => {
     });
   });
 
-  it("reserves only the static portal sign-in slug", () => {
-    expect(
-      parseChapterForm(form({ name: "Sign in", slug: "sign-in" })),
-    ).toEqual({
-      ok: false,
-      errorKey: "slug-invalid",
-    });
-    expect(
-      parseChapterForm(
-        form({ name: "Sign-in Circle", slug: "sign-in-circle" }),
-      ),
-    ).toMatchObject({ ok: true, input: { slug: "sign-in-circle" } });
+  it.each(["sign-in", "applications"])(
+    "reserves the exact static portal slug %j",
+    (slug) => {
+      expect(parseChapterForm(form({ name: "Reserved", slug }))).toEqual({
+        ok: false,
+        errorKey: "slug-invalid",
+      });
+    },
+  );
+
+  it("allows nearby non-colliding portal slugs", () => {
+    for (const slug of ["sign-in-circle", "applications-circle"]) {
+      expect(parseChapterForm(form({ name: "Circle", slug }))).toMatchObject({
+        ok: true,
+        input: { slug },
+      });
+    }
   });
 
   it("fails closed on forged visibility and oversized bounded fields", () => {

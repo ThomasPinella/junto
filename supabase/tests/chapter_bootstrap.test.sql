@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(45);
+select plan(50);
 
 insert into public.juntos (id, name, slug, archive_visibility, status)
 values
@@ -211,9 +211,9 @@ select throws_ok(
 );
 
 select throws_ok(
-  $$select * from public.bootstrap_junto('Reserved probe', 'sign-in')$$,
+  $$select * from public.bootstrap_junto('Reserved probe', 'applications')$$,
   '42501', null,
-  '22. ordinary-member authorization wins before reserved slug validation'
+  '22. ordinary-member authorization wins before applications reserved-slug enforcement'
 );
 
 select throws_ok(
@@ -429,6 +429,38 @@ select is(
     )),
   2,
   '45. seed chapter rows remain intact throughout the suite'
+);
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', '71000000-0000-4000-a000-000000000011', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select throws_ok(
+  $$select * from public.bootstrap_junto('Reserved applications route', 'applications')$$,
+  '23514', null,
+  '46. ordinary chapter creation cannot use the static portal applications slug'
+);
+select lives_ok(
+  $$select * from public.bootstrap_junto('Applications Circle', 'applications-circle')$$,
+  '47. ordinary chapter creation allows the nearby applications-circle slug'
+);
+reset role;
+select set_config('request.jwt.claims', '', true);
+
+select ok(
+  (select convalidated from pg_constraint
+    where conrelid = 'public.juntos'::regclass
+      and conname = 'juntos_slug_not_applications'),
+  '48. the applications reservation is validated against pre-existing rows'
+);
+select throws_ok(
+  $$insert into public.juntos (name, slug) values ('Reserved applications', 'applications')$$,
+  '23514', null,
+  '49. the table boundary blocks a trusted direct applications insert'
+);
+select throws_ok(
+  $$update public.juntos set slug = 'applications' where slug = 'alder'$$,
+  '23514', null,
+  '50. the table boundary blocks a trusted direct applications update'
 );
 
 select * from finish();
