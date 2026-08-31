@@ -1,15 +1,17 @@
 {
   "run_id": "chapter-applications",
-  "stage": "correction",
+  "stage": "final-review",
   "baseline": "2f9aebe237445128a0fd58e72e1bcd4635d5b08a",
-  "review_baseline": "150e76cf154555427401daa24f6a5219ce82fa66",
-  "assignment": "C04",
-  "reviewer": "V02",
+  "review_baseline": "047fd23d9bbf5b4ebc009e898074baf3f5668089",
+  "assignment": "R03",
+  "reviewer": "R03",
   "status": "running",
   "branch": "dev/chapter-applications",
+  "candidate": "5b44733",
   "email_sender": "Junto <applications@thomaspinella.com>",
   "email_recipient": "txpinella@gmail.com",
   "email_provider_validation_id": "e324f41d-18cf-496f-ac10-869d294367f9",
-  "production_applications_slug_conflict": "guarded_transactionally_by_migration",
-  "updated_at": "2026-08-31T07:46:54Z"
+  "production_applications_slug_conflict": false,
+  "production_reviewer_user_exists": true,
+  "updated_at": "2026-08-31T08:13:19Z"
 }
