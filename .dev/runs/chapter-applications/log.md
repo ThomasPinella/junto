@@ -7,3 +7,5 @@
 - 2026-08-31 04:23 UTC — R01 dispatched read-only over `357ff63..42f4545` with Codex GPT-5.6 Sol, high effort, to reconcile the full specification/security surface.
 - 2026-08-31 04:23 UTC — R01 completed: correction required only for exact `applications` route collision; all other approved behavior and evidence aligned.
 - 2026-08-31 04:23 UTC — C02 dispatched from `42f4545` to reserve `applications` across both creation paths and authoritative storage with focused rollback/security proof.
+- 2026-08-31 04:23 UTC — C02 completed as `7314942`; focused unit, 107-assertion pgTAP, fresh migration, pre-existing-conflict failure, lint/type/build, and local advisor checks passed.
+- 2026-08-31 04:23 UTC — C01 and C02 integrated as `5f39623` and `9a51a35`; immutable review baseline set to `9a51a35a33af2c73b6655721690dc65a6bbf647a`.
