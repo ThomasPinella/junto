@@ -23,3 +23,4 @@
 - 2026-08-31 07:46 UTC — V02 failed with one high-severity public-RPC/reviewer-parser email-contract mismatch; deployment remained blocked and C04 was prepared.
 - 2026-08-31 08:13 UTC — C04 completed as `5b44733`: stored-row schemas now accept every SQL-valid email string while public form validation stays strict; focused 20-unit/64-pgTAP and full 243-unit/467-pgTAP/186-safety/19-Auth/62-stack-free/132-live/1-absence/build/probe gates passed, with clean teardown.
 - 2026-08-31 08:13 UTC — Hosted preflight confirmed no `applications` slug conflict and an existing `txpinella@gmail.com` Auth user; R03 dispatched read-only over `047fd23..5b44733`.
+- 2026-08-31 08:20 UTC — R03 passed with no qualifying findings; correction fully closes the parser mismatch while preserving strict form validation and SQL safety. Candidate approved for merge and deployment.
