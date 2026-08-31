@@ -9,3 +9,5 @@
 - 2026-08-31 04:23 UTC — C02 dispatched from `42f4545` to reserve `applications` across both creation paths and authoritative storage with focused rollback/security proof.
 - 2026-08-31 04:23 UTC — C02 completed as `7314942`; focused unit, 107-assertion pgTAP, fresh migration, pre-existing-conflict failure, lint/type/build, and local advisor checks passed.
 - 2026-08-31 04:23 UTC — C01 and C02 integrated as `5f39623` and `9a51a35`; immutable review baseline set to `9a51a35a33af2c73b6655721690dc65a6bbf647a`.
+- 2026-08-31 05:53 UTC — Independent integrated verification passed: 240 unit/component, 460 pgTAP, 186 harness-safety, 19 real Auth, 62 stack-free browser (+2 intentional skips), 132 live browser twice, 1 fixture-absence, schema lint/advisors, production build, and production process probe. Initial stack-free command had two sitemap origin mismatches from omitted test-site env and passed unchanged on exact-origin rerun.
+- 2026-08-31 05:53 UTC — Local Supabase stopped and loopback listeners verified absent; V01 dispatched read-only over `2f9aebe..4954e02` with Codex GPT-5.6 Sol, high effort.
