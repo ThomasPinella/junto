@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(60);
+select plan(64);
 
 insert into auth.users
   (instance_id, id, aud, role, email, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
@@ -125,6 +125,37 @@ select set_config('request.jwt.claims', json_build_object('sub','a9000000-0000-4
 set local role authenticated;
 select is((select count(*)::int from public.list_chapter_applications()), 1, '36. only the exact normalized verified reviewer can list');
 reset role;
+
+set local role anon;
+select lives_ok(
+  $$select public.submit_chapter_application('Short Domain Table', 'Rome', ' A@B.C ', 'Database-valid email proof.', '')$$,
+  '36a. anonymous submission accepts every email allowed by the database boundary'
+);
+reset role;
+
+select set_config('request.jwt.claims', json_build_object('sub','a9000000-0000-4000-a000-000000000001','role','authenticated')::text, true);
+set local role authenticated;
+select is(
+  (select applicant_email from public.list_chapter_applications() where applicant_email = 'a@b.c'),
+  'a@b.c',
+  '36b. the reviewer can list a normalized database-valid short-domain email'
+);
+select is(
+  (select application_status || '|' || applicant_email
+     from public.decide_chapter_application(
+       (select application_id from public.list_chapter_applications() where applicant_email = 'a@b.c'),
+       'decline',
+       null
+     )),
+  'declined|a@b.c',
+  '36c. the decision RPC returns the database-valid email after its durable decision'
+);
+reset role;
+select is(
+  (select status from public.chapter_applications where applicant_email_normalized = 'a@b.c'),
+  'declined',
+  '36d. the short-domain application remains durably decided'
+);
 
 select set_config('request.jwt.claims', json_build_object('sub','a9000000-0000-4000-a000-000000000002','role','authenticated')::text, true);
 set local role authenticated;

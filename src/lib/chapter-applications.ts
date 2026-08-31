@@ -14,7 +14,7 @@ const applicationRowSchema = z.object({
   application_id: z.uuid(),
   chapter_name: z.string(),
   application_location: z.string(),
-  applicant_email: z.email(),
+  applicant_email: z.string(),
   intent_note: z.string(),
   application_status: z.enum(["pending", "approved", "declined"]),
   created_at: z.string(),
@@ -26,7 +26,7 @@ const applicationRowSchema = z.object({
 const decisionRowSchema = z.object({
   application_id: z.uuid(),
   application_status: z.enum(["approved", "declined"]),
-  applicant_email: z.email(),
+  applicant_email: z.string(),
   chapter_name: z.string(),
   chapter_id: z.uuid().nullable(),
   chapter_slug: z.string().nullable(),

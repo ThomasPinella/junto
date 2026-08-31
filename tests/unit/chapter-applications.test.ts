@@ -57,6 +57,7 @@ describe("chapter application validation", () => {
     ["chapter-name", "x".repeat(121), "name-invalid"],
     ["location", "x".repeat(241), "location-invalid"],
     ["email", "not-an-email", "email-invalid"],
+    ["email", "a@b.c", "email-invalid"],
     ["intent-note", "x".repeat(1001), "note-invalid"],
     ["website", "x".repeat(201), "request-invalid"],
   ])("rejects malformed or oversized %s", (field, value, errorKey) => {
@@ -185,7 +186,7 @@ describe("chapter application data boundary", () => {
           application_id: "11111111-2222-4333-8444-555555555555",
           chapter_name: "Junto Oak",
           application_location: "Philadelphia",
-          applicant_email: "applicant@example.com",
+          applicant_email: "a@b.c",
           intent_note: "A serious table.",
           application_status: "pending",
           created_at: "2026-08-31T00:00:00Z",
@@ -199,7 +200,7 @@ describe("chapter application data boundary", () => {
     await expect(listChapterApplications(rpcClient(rpc))).resolves.toEqual([
       expect.objectContaining({
         chapterName: "Junto Oak",
-        applicantEmail: "applicant@example.com",
+        applicantEmail: "a@b.c",
         status: "pending",
       }),
     ]);
@@ -218,6 +219,37 @@ describe("chapter application data boundary", () => {
         chapterSlug: "oak",
       }),
     ).resolves.toEqual({ ok: false, errorKey: "slug-taken" });
+  });
+
+  it("accepts a database-valid applicant email in a durable decision result", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [
+        {
+          application_id: "11111111-2222-4333-8444-555555555555",
+          application_status: "declined",
+          applicant_email: "a@b.c",
+          chapter_name: "Junto Oak",
+          chapter_id: null,
+          chapter_slug: null,
+        },
+      ],
+      error: null,
+    });
+    await expect(
+      decideChapterApplication(rpcClient(rpc), {
+        applicationId: "11111111-2222-4333-8444-555555555555",
+        decision: "decline",
+        chapterSlug: null,
+      }),
+    ).resolves.toEqual({
+      ok: true,
+      applicationId: "11111111-2222-4333-8444-555555555555",
+      status: "declined",
+      applicantEmail: "a@b.c",
+      chapterName: "Junto Oak",
+      chapterId: null,
+      chapterSlug: null,
+    });
   });
 });
 
