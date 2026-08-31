@@ -63,7 +63,7 @@ create function public.submit_chapter_application(
   application_intent_note text,
   application_website text default ''
 )
-returns table (application_id uuid, stored boolean)
+returns void
 language plpgsql
 security definer
 set search_path = ''
@@ -74,7 +74,6 @@ declare
   v_location text := btrim(application_location);
   v_email text := public.normalize_email(application_email);
   v_note text := btrim(application_intent_note);
-  v_id uuid;
 begin
   if application_chapter_name is null
      or char_length(v_name) not between 1 and 120 then
@@ -97,10 +96,9 @@ begin
     raise exception 'Invalid website field' using errcode = '22023';
   end if;
 
-  -- A filled honeypot receives the same outward success shape but stores
-  -- nothing and triggers no notification.
+  -- Filled honeypots, fresh submissions, and duplicate pending submissions
+  -- all return void so anonymous callers cannot infer application state.
   if btrim(application_website) <> '' then
-    return query select null::uuid, false;
     return;
   end if;
 
@@ -110,9 +108,8 @@ begin
     applicant_email_normalized,
     intent_note
   ) values (v_name, v_location, v_email, v_note)
-  returning id into v_id;
-
-  return query select v_id, true;
+  on conflict (applicant_email_normalized) where status = 'pending'
+  do nothing;
 end;
 $$;
 

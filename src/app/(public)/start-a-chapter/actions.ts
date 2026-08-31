@@ -28,11 +28,11 @@ export async function submitApplication(formData: FormData): Promise<void> {
   );
   if (!result.ok) redirect(applicationUrl("error", result.errorKey));
 
-  if (!result.stored) {
+  if (parsed.input.website.trim() !== "") {
     redirect(applicationUrl("status", "submitted"));
   }
 
-  const notification = await notifyReviewerOfApplication(parsed.input);
+  const notification = await notifyReviewerOfApplication();
   redirect(
     applicationUrl(
       "status",

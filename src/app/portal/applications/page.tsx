@@ -35,7 +35,6 @@ const ERROR_MESSAGES: Record<string, string> = {
     "The application is no longer pending or the decision is invalid.",
   "not-permitted": "Reviewer access is required.",
   "request-failed": "Nothing was changed. Try again in a moment.",
-  "already-pending": "Nothing was changed. Try again in a moment.",
 };
 
 function firstValue(value: string | string[] | undefined): string | undefined {

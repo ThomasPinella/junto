@@ -10,11 +10,6 @@ import {
 } from "@/lib/chapter-application-domain";
 import type { SupabaseServerClient } from "@/lib/supabase/server";
 
-const submittedRowSchema = z.object({
-  application_id: z.uuid().nullable(),
-  stored: z.boolean(),
-});
-
 const applicationRowSchema = z.object({
   application_id: z.uuid(),
   chapter_name: z.string(),
@@ -51,14 +46,13 @@ export interface ChapterApplication {
 }
 
 export type SubmitApplicationResult =
-  | { ok: true; applicationId: string | null; stored: boolean }
-  | { ok: false; errorKey: ChapterApplicationWriteErrorKey };
+  { ok: true } | { ok: false; errorKey: ChapterApplicationWriteErrorKey };
 
 export async function submitChapterApplication(
   supabase: SupabaseServerClient,
   input: ChapterApplicationInput,
 ): Promise<SubmitApplicationResult> {
-  const { data, error } = await supabase.rpc("submit_chapter_application", {
+  const { error } = await supabase.rpc("submit_chapter_application", {
     application_chapter_name: input.chapterName,
     application_location: input.location,
     application_email: input.applicantEmail,
@@ -66,23 +60,9 @@ export async function submitChapterApplication(
     application_website: input.website,
   });
   if (error) {
-    const errorKey = chapterApplicationWriteErrorKey(error);
-    return {
-      ok: false,
-      errorKey: errorKey === "slug-taken" ? "already-pending" : errorKey,
-    };
+    return { ok: false, errorKey: chapterApplicationWriteErrorKey(error) };
   }
-  const parsed = z.array(submittedRowSchema).safeParse(data);
-  const row =
-    parsed.success && parsed.data.length === 1 ? parsed.data[0] : null;
-  if (!row || (row.stored && !row.application_id)) {
-    return { ok: false, errorKey: "request-failed" };
-  }
-  return {
-    ok: true,
-    applicationId: row.application_id,
-    stored: row.stored,
-  };
+  return { ok: true };
 }
 
 export async function listChapterApplications(
@@ -131,11 +111,7 @@ export async function decideChapterApplication(
     approved_chapter_slug: input.chapterSlug,
   });
   if (error) {
-    const errorKey = chapterApplicationWriteErrorKey(error);
-    return {
-      ok: false,
-      errorKey: errorKey === "already-pending" ? "slug-taken" : errorKey,
-    };
+    return { ok: false, errorKey: chapterApplicationWriteErrorKey(error) };
   }
   const parsed = z.array(decisionRowSchema).safeParse(data);
   const row =

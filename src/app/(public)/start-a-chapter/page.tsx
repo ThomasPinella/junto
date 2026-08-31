@@ -24,8 +24,6 @@ const ERROR_MESSAGES: Record<string, string> = {
   "email-invalid": "Enter a valid email address.",
   "note-invalid": "Enter a short note of 1,000 characters or fewer.",
   "request-invalid": "Check the application and try again.",
-  "already-pending":
-    "An application for this email address is already awaiting review.",
   "input-invalid": "Check the application and try again.",
   "request-failed": "Nothing was submitted. Try again in a moment.",
   "not-permitted": "Nothing was submitted. Try again in a moment.",

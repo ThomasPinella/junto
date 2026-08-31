@@ -59,11 +59,7 @@ describe("chapter application Server Actions", () => {
     mocks.requireReviewer.mockResolvedValue({
       supabase: { marker: "reviewer-client" },
     });
-    mocks.submit.mockResolvedValue({
-      ok: true,
-      stored: true,
-      applicationId: "11111111-2222-4333-8444-555555555555",
-    });
+    mocks.submit.mockResolvedValue({ ok: true });
     mocks.notifyReviewer.mockResolvedValue({ ok: true });
     mocks.decide.mockResolvedValue({
       ok: true,
@@ -87,24 +83,41 @@ describe("chapter application Server Actions", () => {
       expect.objectContaining({ applicantEmail: "applicant@example.com" }),
     );
     expect(mocks.notifyReviewer).toHaveBeenCalledTimes(1);
+    expect(mocks.notifyReviewer).toHaveBeenCalledWith();
   });
 
-  it("does not notify when the database honeypot result stored nothing", async () => {
-    mocks.submit.mockResolvedValue({
-      ok: true,
-      stored: false,
-      applicationId: null,
-    });
-    await expect(submitApplication(applicationForm())).rejects.toThrow(
+  it("uses its parsed honeypot to suppress reviewer email after the indistinguishable RPC success", async () => {
+    const data = applicationForm();
+    data.set("website", "https://spam.example");
+    await expect(submitApplication(data)).rejects.toThrow(
       "REDIRECT:/start-a-chapter?status=submitted",
     );
+    expect(mocks.submit).toHaveBeenCalledTimes(1);
     expect(mocks.notifyReviewer).not.toHaveBeenCalled();
   });
 
-  it("does not send email after a duplicate or failed write", async () => {
-    mocks.submit.mockResolvedValue({ ok: false, errorKey: "already-pending" });
+  it("gives fresh and duplicate-pending submissions the same public outcome", async () => {
+    const outcomes = await Promise.allSettled([
+      submitApplication(applicationForm()),
+      submitApplication(applicationForm()),
+    ]);
+    expect(
+      outcomes.map((outcome) =>
+        outcome.status === "rejected" ? String(outcome.reason) : "resolved",
+      ),
+    ).toEqual([
+      "Error: REDIRECT:/start-a-chapter?status=submitted",
+      "Error: REDIRECT:/start-a-chapter?status=submitted",
+    ]);
+    expect(mocks.notifyReviewer).toHaveBeenCalledTimes(2);
+    expect(mocks.notifyReviewer).toHaveBeenNthCalledWith(1);
+    expect(mocks.notifyReviewer).toHaveBeenNthCalledWith(2);
+  });
+
+  it("does not send email after a failed write", async () => {
+    mocks.submit.mockResolvedValue({ ok: false, errorKey: "request-failed" });
     await expect(submitApplication(applicationForm())).rejects.toThrow(
-      "error=already-pending",
+      "error=request-failed",
     );
     expect(mocks.notifyReviewer).not.toHaveBeenCalled();
   });

@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(57);
+select plan(60);
 
 insert into auth.users
   (instance_id, id, aud, role, email, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
@@ -17,6 +17,11 @@ select ok(
   '2. row level security is enabled'
 );
 select has_function('public', 'submit_chapter_application', array['text','text','text','text','text'], '3. bounded submit RPC exists');
+select is(
+  (select pg_get_function_result('public.submit_chapter_application(text,text,text,text,text)'::regprocedure)),
+  'void',
+  '3a. anonymous submit returns no application record or status fields'
+);
 select has_function('public', 'list_chapter_applications', array[]::text[], '4. reviewer list RPC exists');
 select has_function('public', 'decide_chapter_application', array['uuid','text','text'], '5. atomic decision RPC exists');
 select ok((select prosecdef from pg_proc where oid = 'public.submit_chapter_application(text,text,text,text,text)'::regprocedure), '6. submit is security definer');
@@ -35,13 +40,18 @@ select ok(not has_table_privilege('authenticated', 'public.chapter_applications'
 select ok(not has_table_privilege('anon', 'public.chapter_applications', 'insert'), '19. anon cannot bypass submit with a direct insert');
 
 set local role anon;
+create temporary table chapter_application_submit_responses (
+  scenario text primary key,
+  response text
+) on commit drop;
 select throws_ok(
   $$select count(*) from public.chapter_applications$$,
   '42501', null,
   '20. an anonymous direct read is denied'
 );
 select lives_ok(
-  $$select * from public.submit_chapter_application('  Junto Oak  ', '  Philadelphia  ', ' Applicant@Example.COM ', '  A serious local table.  ', '')$$,
+  $$insert into chapter_application_submit_responses
+      values ('fresh', public.submit_chapter_application('  Junto Oak  ', '  Philadelphia  ', ' Applicant@Example.COM ', '  A serious local table.  ', '')::text)$$,
   '21. anonymous callers can submit a valid bounded application'
 );
 reset role;
@@ -60,20 +70,31 @@ select set_config(
 
 set local role anon;
 select lives_ok(
-  $$select * from public.submit_chapter_application('Bot chapter', 'Bot city', 'bot@example.com', 'Bot note', 'https://spam.example')$$,
+  $$insert into chapter_application_submit_responses
+      values ('honeypot', public.submit_chapter_application('Bot chapter', 'Bot city', 'bot@example.com', 'Bot note', 'https://spam.example')::text)$$,
   '23. a filled honeypot receives a non-disclosing success response'
 );
 reset role;
 select is((select count(*)::int from public.chapter_applications where applicant_email_normalized = 'bot@example.com'), 0, '24. the honeypot stores no application');
 
 set local role anon;
-select throws_ok(
-  $$select * from public.submit_chapter_application('Duplicate', 'Elsewhere', ' APPLICANT@example.com ', 'Another note', '')$$,
-  '23505', null,
-  '25. one pending application per normalized email is enforced'
+select lives_ok(
+  $$insert into chapter_application_submit_responses
+      values ('duplicate', public.submit_chapter_application('Duplicate', 'Elsewhere', ' APPLICANT@example.com ', 'Another note', '')::text)$$,
+  '25. a duplicate pending submission receives the same successful RPC outcome'
+);
+select is(
+  (select response from chapter_application_submit_responses where scenario = 'fresh'),
+  (select response from chapter_application_submit_responses where scenario = 'duplicate'),
+  '25a. fresh and duplicate anonymous RPC response values are identical'
+);
+select is(
+  (select response from chapter_application_submit_responses where scenario = 'fresh'),
+  (select response from chapter_application_submit_responses where scenario = 'honeypot'),
+  '25b. honeypot and real anonymous RPC response values are identical'
 );
 reset role;
-select is((select count(*)::int from public.chapter_applications where applicant_email_normalized = 'applicant@example.com'), 1, '26. duplicate failure leaves one original application');
+select is((select count(*)::int from public.chapter_applications where applicant_email_normalized = 'applicant@example.com'), 1, '26. fresh and duplicate submissions leave exactly one original pending application');
 
 set local role anon;
 select throws_ok($$select * from public.submit_chapter_application('', 'City', 'a@example.com', 'Note', '')$$, '22023', null, '27. blank names fail closed');

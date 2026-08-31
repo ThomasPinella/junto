@@ -39,27 +39,17 @@ async function sendEmail(message: EmailMessage): Promise<NotificationResult> {
   }
 }
 
-export async function notifyReviewerOfApplication(input: {
-  chapterName: string;
-  location: string;
-  applicantEmail: string;
-  intentNote: string;
-}): Promise<NotificationResult> {
+export async function notifyReviewerOfApplication(): Promise<NotificationResult> {
   const reviewUrl = new URL(
     routes.portalApplications,
     loadSiteEnv().NEXT_PUBLIC_SITE_URL,
   );
   return sendEmail({
     to: CHAPTER_APPLICATION_REVIEWER_EMAIL,
-    subject: `New Junto chapter application: ${input.chapterName}`,
+    subject: "New Junto chapter application",
     text: [
-      `Chapter: ${input.chapterName}`,
-      `Location: ${input.location}`,
-      `Applicant: ${input.applicantEmail}`,
-      "",
-      input.intentNote,
-      "",
-      `Review this application: ${reviewUrl.toString()}`,
+      "A chapter application was submitted.",
+      `Sign in to review the private queue: ${reviewUrl.toString()}`,
       "Decisions can only be made after signing in on the review page.",
     ].join("\n"),
   });

@@ -132,7 +132,7 @@ describe("chapter application validation", () => {
 
   it("maps database failures to bounded application errors", () => {
     expect(chapterApplicationWriteErrorKey({ code: "23505" })).toBe(
-      "already-pending",
+      "slug-taken",
     );
     expect(chapterApplicationWriteErrorKey({ code: "42501" })).toBe(
       "not-permitted",
@@ -147,25 +147,16 @@ describe("chapter application validation", () => {
 });
 
 describe("chapter application data boundary", () => {
-  it("submits only through the bounded RPC and validates its response", async () => {
+  it("submits only through the bounded RPC without parsing an outward result", async () => {
     const rpc = vi.fn().mockResolvedValue({
-      data: [
-        {
-          application_id: "11111111-2222-4333-8444-555555555555",
-          stored: true,
-        },
-      ],
+      data: null,
       error: null,
     });
     const parsed = parseChapterApplicationForm(validForm());
     if (!parsed.ok) throw new Error("fixture should parse");
     await expect(
       submitChapterApplication(rpcClient(rpc), parsed.input),
-    ).resolves.toEqual({
-      ok: true,
-      applicationId: "11111111-2222-4333-8444-555555555555",
-      stored: true,
-    });
+    ).resolves.toEqual({ ok: true });
     expect(rpc).toHaveBeenCalledWith(
       "submit_chapter_application",
       expect.objectContaining({
@@ -175,15 +166,16 @@ describe("chapter application data boundary", () => {
     );
   });
 
-  it("fails closed on malformed successful RPC responses", async () => {
-    const rpc = vi
-      .fn()
-      .mockResolvedValue({ data: [{ stored: true }], error: null });
+  it("does not expose data returned by the anonymous RPC client", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: { private: "ignored" },
+      error: null,
+    });
     const parsed = parseChapterApplicationForm(validForm());
     if (!parsed.ok) throw new Error("fixture should parse");
     await expect(
       submitChapterApplication(rpcClient(rpc), parsed.input),
-    ).resolves.toEqual({ ok: false, errorKey: "request-failed" });
+    ).resolves.toEqual({ ok: true });
   });
 
   it("parses only the private reviewer RPC projection", async () => {
@@ -243,14 +235,7 @@ describe("Resend chapter application email", () => {
   });
 
   it("uses the hardcoded sender and reviewer with a review-only link", async () => {
-    await expect(
-      notifyReviewerOfApplication({
-        chapterName: "Junto Oak",
-        location: "Philadelphia",
-        applicantEmail: "applicant@example.com",
-        intentNote: "A serious table.",
-      }),
-    ).resolves.toEqual({ ok: true });
+    await expect(notifyReviewerOfApplication()).resolves.toEqual({ ok: true });
     const fetchMock = vi.mocked(fetch);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] ?? [];
@@ -262,8 +247,13 @@ describe("Resend chapter application email", () => {
     expect(body).toMatchObject({
       from: "Junto <applications@thomaspinella.com>",
       to: ["txpinella@gmail.com"],
+      subject: "New Junto chapter application",
     });
     expect(body.text).toContain("https://junto.example/portal/applications");
+    expect(body.text).toContain("review the private queue");
+    expect(JSON.stringify(body)).not.toMatch(
+      /Junto Oak|Philadelphia|applicant@example\.com|A serious table/,
+    );
     expect(body.text).not.toMatch(/approve=|decline=|decision=/);
   });
 

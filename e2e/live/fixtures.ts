@@ -399,6 +399,9 @@ export async function chapterRecordBySlug(
 
 export interface FixtureApplicationRecord {
   id: string;
+  chapterName: string;
+  location: string;
+  intentNote: string;
   status: "pending" | "approved" | "declined";
   juntoId: string | null;
   reviewedBy: string | null;
@@ -410,7 +413,7 @@ export async function applicationRecordByEmail(
 ): Promise<FixtureApplicationRecord | null> {
   const res = await restFetch(
     `/rest/v1/chapter_applications?applicant_email_normalized=eq.${encodeURIComponent(email)}` +
-      "&select=id,status,junto_id,reviewed_by,reviewed_at",
+      "&select=id,chapter_name,location,intent_note,status,junto_id,reviewed_by,reviewed_at",
   );
   if (res.status >= 300 || !Array.isArray(res.json)) {
     throw new Error(`application fixture lookup failed (HTTP ${res.status})`);
@@ -423,6 +426,9 @@ export async function applicationRecordByEmail(
   if (
     typeof row.id !== "string" ||
     !UUID_SHAPE.test(row.id) ||
+    typeof row.chapter_name !== "string" ||
+    typeof row.location !== "string" ||
+    typeof row.intent_note !== "string" ||
     !["pending", "approved", "declined"].includes(String(row.status)) ||
     (row.junto_id !== null &&
       (typeof row.junto_id !== "string" || !UUID_SHAPE.test(row.junto_id))) ||
@@ -435,6 +441,9 @@ export async function applicationRecordByEmail(
   }
   return {
     id: row.id,
+    chapterName: row.chapter_name,
+    location: row.location,
+    intentNote: row.intent_note,
     status: row.status as FixtureApplicationRecord["status"],
     juntoId: row.junto_id as string | null,
     reviewedBy: row.reviewed_by as string | null,

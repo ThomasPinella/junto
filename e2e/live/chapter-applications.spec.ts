@@ -126,14 +126,43 @@ test("public submit, exact review, atomic approval, verified admin claim, and de
   await expect(
     applicantPage.getByText(/application was saved.*notification/i),
   ).toBeVisible();
-  expect(
-    await applicationRecordByEmail(CHAPTER_APPLICATION_APPROVE_EMAIL),
-  ).toMatchObject({
+  const originalApplication = await applicationRecordByEmail(
+    CHAPTER_APPLICATION_APPROVE_EMAIL,
+  );
+  expect(originalApplication).toMatchObject({
+    chapterName: CHAPTER_APPLICATION_APPROVED.name,
+    location: "Hickory, NC",
+    intentNote: "A table for essays about civic life in Hickory.",
     status: "pending",
     juntoId: null,
     reviewedBy: null,
     reviewedAt: null,
   });
+
+  // A second public submission for the normalized email carries different
+  // private details but receives the exact same visible result. The durable
+  // pending row remains the original application for reviewer decisions.
+  await applicantPage.goto("/start-a-chapter");
+  await applicantPage.getByLabel("Chapter name").fill("Probe Duplicate");
+  await applicantPage.getByLabel("City or location").fill("Elsewhere");
+  await applicantPage
+    .getByLabel("Email address")
+    .fill(CHAPTER_APPLICATION_APPROVE_EMAIL.toUpperCase());
+  await applicantPage
+    .getByLabel("Why this chapter?")
+    .fill("Details that must not replace or disclose the pending row.");
+  await applicantPage
+    .getByRole("button", { name: "Submit application" })
+    .click();
+  await expect(applicantPage).toHaveURL(
+    "/start-a-chapter?status=submitted-notification-failed",
+  );
+  await expect(
+    applicantPage.getByText(/application was saved.*notification/i),
+  ).toBeVisible();
+  expect(
+    await applicationRecordByEmail(CHAPTER_APPLICATION_APPROVE_EMAIL),
+  ).toEqual(originalApplication);
 
   await applicantPage.goto("/start-a-chapter");
   await applicantPage.getByLabel("Chapter name").fill("T09 Declined Table");

@@ -151,11 +151,7 @@ export function isVerifiedApplicationReviewer(user: {
 }
 
 export type ChapterApplicationWriteErrorKey =
-  | "already-pending"
-  | "not-permitted"
-  | "input-invalid"
-  | "slug-taken"
-  | "request-failed";
+  "not-permitted" | "input-invalid" | "slug-taken" | "request-failed";
 
 export function chapterApplicationWriteErrorKey(error: {
   code?: string | null;
@@ -164,6 +160,6 @@ export function chapterApplicationWriteErrorKey(error: {
   if (error.code === "22023" || error.code === "23514") {
     return "input-invalid";
   }
-  if (error.code === "23505") return "already-pending";
+  if (error.code === "23505") return "slug-taken";
   return "request-failed";
 }
