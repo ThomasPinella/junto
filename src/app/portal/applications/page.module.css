@@ -1,0 +1,101 @@
+.empty {
+  margin-top: var(--space-xl);
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.list {
+  max-width: var(--measure-reading);
+  margin-top: var(--space-xl);
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  padding-block: var(--space-xl);
+  border-top: 1px solid var(--color-rule);
+}
+
+.row:last-child {
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.rowHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm) var(--space-lg);
+}
+
+.name {
+  font-size: 1.625rem;
+}
+
+.location,
+.email,
+.date,
+.status,
+.result {
+  font-family: var(--font-sans);
+}
+
+.location,
+.date,
+.status,
+.result {
+  color: var(--color-muted);
+}
+
+.status {
+  font-size: var(--label-size);
+  font-weight: 600;
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+}
+
+.email {
+  margin-top: var(--space-md);
+}
+
+.note {
+  margin-top: var(--space-md);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.date,
+.result {
+  margin-top: var(--space-md);
+  font-size: 0.9375rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+}
+
+.approveForm {
+  display: flex;
+  flex: 1 1 28rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-md);
+}
+
+.approveForm > div {
+  flex: 1 1 16rem;
+}
+
+@media (max-width: 640px) {
+  .approveForm,
+  .approveForm > div,
+  .approveForm button,
+  .actions > form:last-child,
+  .actions > form:last-child button {
+    width: 100%;
+  }
+}

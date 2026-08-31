@@ -67,6 +67,21 @@ for the static portal sign-in route. Descriptions are at most 2,000 characters,
 and locations are at most 240 characters. Archive visibility is `private`
 unless `public` is explicitly supplied.
 
+## Chapter applications
+
+`chapter_applications` is a private intake record containing a bounded chapter
+name, location, normalized applicant email, short intent note, status, decision
+evidence, and the approved `junto_id` where applicable. At most one pending
+application may exist for a normalized email address.
+
+Approval is a second bounded Junto-creation path. One transaction locks a
+pending application, creates an active Junto with **Junto members only** archive
+visibility, creates a pending `admin` invitation for the applicant email, and
+records the approved decision and reviewer. A failure or slug collision leaves
+the application pending and creates neither a chapter nor an invitation.
+Decline records durable reviewer and timestamp evidence without creating either
+record. Applications are not a general workflow or ownership subsystem.
+
 ## meetings
 
 id

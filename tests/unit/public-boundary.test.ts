@@ -9,6 +9,7 @@ const publicFiles = [
   "src/app/(public)/authors/page.tsx",
   "src/app/(public)/authors/[authorSlug]/page.tsx",
   "src/app/(public)/meetings/page.tsx",
+  "src/app/(public)/start-a-chapter/actions.ts",
   "src/app/(public)/juntos/[juntoSlug]/page.tsx",
   "src/app/(public)/juntos/[juntoSlug]/meetings/[meetingDate]/page.tsx",
   "src/app/sitemap.ts",
@@ -21,6 +22,27 @@ describe("public application boundary", () => {
       expect(source, path).not.toMatch(/@\/lib\/profiles|service.?role/i);
       expect(source, path).not.toMatch(/\.from\(["'](?:essays|profiles)["']\)/);
       expect(source, path).toContain("createSupabaseAnonClient");
+    }
+  });
+
+  it("keeps the Resend credential inside the server-only email module", () => {
+    const emailModule = readFileSync(
+      resolve("src/lib/chapter-application-email.ts"),
+      "utf8",
+    );
+    expect(emailModule).toMatch(/^import "server-only";/);
+    expect(emailModule).toContain("RESEND_API_KEY");
+    expect(emailModule).not.toContain("NEXT_PUBLIC_RESEND");
+
+    for (const path of [
+      "src/app/(public)/start-a-chapter/page.tsx",
+      "src/app/(public)/start-a-chapter/actions.ts",
+      "src/app/portal/applications/page.tsx",
+      "src/app/portal/applications/actions.ts",
+    ]) {
+      expect(readFileSync(resolve(path), "utf8"), path).not.toContain(
+        "RESEND_API_KEY",
+      );
     }
   });
 

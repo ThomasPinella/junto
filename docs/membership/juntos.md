@@ -28,3 +28,9 @@ archive setting is public and links each one to its canonical chapter home at
 first, but it does not limit public discovery. Private and inactive Juntos must
 remain absent from the directory, public metadata, sitemaps, and aggregate
 archive views; their chapter URLs resolve identically to missing chapters.
+
+A public visitor may propose a chapter at `/start-a-chapter`. Approval by the
+exact verified application reviewer creates the Junto as active and private,
+together with a pending administrator invitation for the applicant, in one
+transaction. The applicant becomes its administrator only after completing the
+existing verified-email invitation claim.

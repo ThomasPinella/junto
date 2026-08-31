@@ -59,6 +59,7 @@ describe("public sitemap", () => {
       "https://junto.example/essays",
       "https://junto.example/authors",
       "https://junto.example/meetings",
+      "https://junto.example/start-a-chapter",
     ]);
   });
 });

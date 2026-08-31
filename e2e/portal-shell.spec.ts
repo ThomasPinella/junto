@@ -20,6 +20,7 @@ test.describe("member portal entry (unauthenticated baseline)", () => {
       "/portal/philadelphia",
       "/portal/philadelphia/members",
       "/portal/philadelphia/admin",
+      "/portal/applications",
       "/portal/philadelphia/meetings",
       "/portal/philadelphia/meetings/new",
       "/portal/philadelphia/meetings/00000000-0000-4000-a000-000000000001",
@@ -29,6 +30,16 @@ test.describe("member portal entry (unauthenticated baseline)", () => {
       await expect(page).toHaveURL(/\/portal\/sign-in/);
       await expect(page.getByText("Philadelphia")).toHaveCount(0);
     }
+  });
+
+  test("reviewer application route denies unauthenticated access through sign-in", async ({
+    page,
+  }) => {
+    await page.goto("/portal/applications");
+    await expect(page).toHaveURL(
+      "/portal/sign-in?next=%2Fportal%2Fapplications",
+    );
+    await expect(page.getByText("Chapter applications")).toHaveCount(0);
   });
 
   test("sign-in page keeps the JUNTO identity and members-only language", async ({

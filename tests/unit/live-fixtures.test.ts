@@ -70,7 +70,7 @@ function route(spec: RouteSpec, method: string, url: URL): StubResponse {
     return spec.allowDeletes ? { status: 200, body: null } : unexpected();
   }
   if (
-    /^\/rest\/v1\/(essays|meetings|junto_members|junto_invitations|juntos)$/.test(
+    /^\/rest\/v1\/(chapter_applications|essays|meetings|junto_members|junto_invitations|juntos)$/.test(
       path,
     )
   ) {

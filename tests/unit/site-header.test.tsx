@@ -32,6 +32,7 @@ describe("SiteHeader", () => {
       ["Meetings", "/meetings"],
       ["Authors", "/authors"],
       ["About", "/about"],
+      ["Start a chapter", "/start-a-chapter"],
       ["Member Portal", "/portal"],
     ]);
   });

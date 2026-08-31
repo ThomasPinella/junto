@@ -7,6 +7,11 @@ const publicShells = [
   { label: "Meetings", path: "/meetings", finalUrl: "/meetings" },
   { label: "Authors", path: "/authors", finalUrl: "/authors" },
   { label: "About", path: "/about", finalUrl: "/about" },
+  {
+    label: "Start a chapter",
+    path: "/start-a-chapter",
+    finalUrl: "/start-a-chapter",
+  },
   { label: "Member Portal", path: "/portal", finalUrl: "/portal/sign-in" },
 ] as const;
 
@@ -43,6 +48,41 @@ test.describe("public publication shell", () => {
       () => getComputedStyle(document.body).backgroundColor,
     );
     expect(background).toBe("rgb(243, 240, 232)");
+  });
+
+  test("chapter application form is bounded, accessible, and stack-free", async ({
+    page,
+    isMobile,
+  }) => {
+    await page.goto("/start-a-chapter");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Start a chapter" }),
+    ).toBeVisible();
+    for (const label of [
+      "Chapter name",
+      "City or location",
+      "Email address",
+      "Why this chapter?",
+    ]) {
+      await expect(page.getByLabel(label)).toBeVisible();
+    }
+    const honeypot = page.getByLabel("Website");
+    await expect(honeypot).toHaveAttribute("tabindex", "-1");
+    expect(
+      await honeypot.evaluate((input) => ({
+        hiddenFromAssistiveTech:
+          input.parentElement?.getAttribute("aria-hidden") === "true",
+        right: input.getBoundingClientRect().right,
+      })),
+    ).toEqual({ hiddenFromAssistiveTech: true, right: expect.any(Number) });
+    expect((await honeypot.boundingBox())?.x ?? 0).toBeLessThan(0);
+    const submit = page.getByRole("button", { name: "Submit application" });
+    await expect(submit).toBeVisible();
+    if (isMobile) {
+      const box = await submit.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.height).toBeGreaterThanOrEqual(44);
+    }
   });
 
   for (const shell of publicShells) {
@@ -211,6 +251,7 @@ test.describe("public publication shell", () => {
         "http://127.0.0.1:3210/essays",
         "http://127.0.0.1:3210/authors",
         "http://127.0.0.1:3210/meetings",
+        "http://127.0.0.1:3210/start-a-chapter",
       ].toSorted(),
     );
     expect(locations.join("\n")).not.toMatch(

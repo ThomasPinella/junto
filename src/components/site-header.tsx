@@ -9,6 +9,7 @@ const navItems = [
   { label: "Meetings", href: routes.meetings },
   { label: "Authors", href: routes.authors },
   { label: "About", href: routes.about },
+  { label: "Start a chapter", href: routes.startChapter },
   { label: "Member Portal", href: routes.portal },
 ] as const;
 

@@ -22,12 +22,14 @@ pnpm dev
 
 Missing or invalid environment variables fail explicitly at startup/build
 with the offending variable named; see `.env.example` for the full list.
-The application requires exactly these four variables:
+The application requires exactly these five variables:
 
 - `NEXT_PUBLIC_SITE_URL` — the absolute canonical application origin;
 - `JUNTO_INITIAL_JUNTO_SLUG` — the active public chapter served at `/`;
 - `NEXT_PUBLIC_SUPABASE_URL` — local or hosted Supabase project URL;
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — the project publishable/legacy anon key.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — the project publishable/legacy anon key;
+- `RESEND_API_KEY` — the server-only Resend credential used for
+  chapter-application notifications.
 
 The application neither reads nor requires a Supabase service-role/secret key.
 That privileged key exists only inside loopback-guarded local fixture harnesses;
@@ -53,11 +55,13 @@ Docker daemon publishes unspecified ports to `127.0.0.1` by default, so the
 development database and dashboards are not exposed on the VPS's public
 interfaces. Run `pnpm db:stop` when finished.
 
-`pnpm test:e2e` is stack-free: it proves the public shells and the
-unauthenticated portal denials only. The authenticated member journeys —
+`pnpm test:e2e` is stack-free: it proves the public shells and form, including
+`/start-a-chapter`, plus unauthenticated portal denials. The authenticated
+member journeys —
 invitation-gated magic-link sign-in through the real GoTrue/Mailpit email
 flow, invitation claiming, multi-Junto switching, Junto-scoped admin
-navigation, live deactivation, and sign-out — run through the explicit
+navigation, chapter application review/approval/verified-admin claim/decline,
+live deactivation, and sign-out — run through the explicit
 integration command `pnpm test:e2e:live`, which requires the local Supabase
 stack (`pnpm db:start`) and checks for it up front. Its privileged fixture
 setup/teardown obeys the same loopback-only, fail-closed rules as the T02
@@ -82,7 +86,9 @@ forwarded off the loopback stack, with no override.
   `/juntos/[juntoSlug]/meetings/[meetingDate]` record pages, served from the
   safe `public_meetings` projection), the private member portal (`/portal`,
   `/portal/[juntoSlug]`, including the meeting program and Junto-scoped
-  meeting administration), and the Supabase Auth callback (`/auth/callback`)
+  meeting administration), public chapter intake (`/start-a-chapter`), exact
+  reviewer intake (`/portal/applications`), and the Supabase Auth callback
+  (`/auth/callback`)
 - `src/proxy.ts` — refreshes Supabase Auth cookies for private routes
   (never an authorization decision; protected server code re-checks the
   user and live active membership through RLS on every request)
@@ -130,6 +136,7 @@ NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3212 \
 JUNTO_INITIAL_JUNTO_SLUG=verification \
 NEXT_PUBLIC_SUPABASE_URL=https://placeholder.invalid \
 NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-publishable-value \
+RESEND_API_KEY=placeholder-resend-value \
 pnpm verify:production
 
 pnpm db:stop
@@ -162,6 +169,7 @@ git archive HEAD | tar -x -C "$candidate_dir"
   JUNTO_INITIAL_JUNTO_SLUG=verification \
   NEXT_PUBLIC_SUPABASE_URL=https://placeholder.invalid \
   NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-publishable-value \
+  RESEND_API_KEY=placeholder-resend-value \
   pnpm build
   env -i PATH="$PATH" CI=1 \
   PORT=3212 \
@@ -169,6 +177,7 @@ git archive HEAD | tar -x -C "$candidate_dir"
   JUNTO_INITIAL_JUNTO_SLUG=verification \
   NEXT_PUBLIC_SUPABASE_URL=https://placeholder.invalid \
   NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-publishable-value \
+  RESEND_API_KEY=placeholder-resend-value \
   pnpm verify:production
 )
 rm -rf -- "$candidate_dir"
@@ -189,7 +198,7 @@ the service commands to `pnpm build` and stateless `pnpm start`. Next.js reads
 Railway's injected `PORT`; neither the config nor application hard-codes a host
 port or configures a volume. Railway checks `/health` and restarts only failed
 processes (up to ten attempts). The dynamic, non-cacheable health endpoint
-returns only `{"status":"ready"}` after validating the four required variable
+returns only `{"status":"ready"}` after validating the five required variable
 shapes. It makes no network call and exposes no configuration value.
 
 Before a human-approved deployment:
@@ -208,13 +217,17 @@ Before a human-approved deployment:
    must use HTTPS. Configure production SMTP and retain email confirmation plus
    the database signup hook; invitation claiming depends on verified mailbox
    ownership.
-3. Configure the four application variables above on the Railway service. Do
-   not add `SUPABASE_SERVICE_ROLE_KEY`, local Supabase URLs, Mailpit URLs, fixture
+3. Configure the five application variables above on the Railway service.
+   Validate the Resend key and the `thomaspinella.com` sender domain before
+   enabling chapter applications; custom mail is sent as
+   `Junto <applications@thomaspinella.com>`. Do not add
+   `SUPABASE_SERVICE_ROLE_KEY`, local Supabase URLs, Mailpit URLs, fixture
    variables, a volume, or a deployment-time seed/migration command.
 4. Build and verify locally, then—only with explicit human approval—deploy.
    Confirm `/health` returns 200, then separately exercise a hosted anonymous
-   read and an invited authentication flow to prove the hosted database/Auth
-   boundary.
+   read, a chapter application with reviewer notification, an exact-reviewer
+   decision with applicant notification, and the applicant's verified
+   invitation claim to prove the hosted database/Auth/email boundaries.
 
 Rollback is two separate concerns. Railway can roll the application back to a
 previous artifact, but an applied database migration is durable; prefer a

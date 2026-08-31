@@ -36,6 +36,12 @@ The invitation should remain as historical evidence rather than serving as the p
 
 The durable authorization source is the active junto_members record.
 
+An approved chapter application enters this same lifecycle by creating a
+pending `admin` invitation for the submitted normalized email. Approval does
+not create an Auth user or membership. The applicant requests a one-time link
+on Junto's existing sign-in surface; only their verified mailbox-owned Auth
+session can claim the matching invitation and activate chapter administration.
+
 ## 3.3 Multiple memberships
 
 A user may belong to multiple Juntos.

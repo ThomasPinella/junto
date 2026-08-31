@@ -87,6 +87,15 @@ export const ESSAY_ADMIN_EMAIL = "c11-t05-admin@example.com";
 export const PUBLIC_AUTHOR_A_EMAIL = "c17-public-maya@example.com";
 export const PUBLIC_AUTHOR_B_EMAIL = "c17-public-daniel@example.com";
 export const INTEGRATED_MEMBER_EMAIL = "c22-t08-invitee@example.com";
+export const CHAPTER_APPLICATION_REVIEWER_EMAIL = "txpinella@gmail.com";
+export const CHAPTER_APPLICATION_APPROVE_EMAIL =
+  "c23-chapter-approved@example.com";
+export const CHAPTER_APPLICATION_DECLINE_EMAIL =
+  "c23-chapter-declined@example.com";
+export const CHAPTER_APPLICATION_APPROVED = {
+  slug: "t09-hickory",
+  name: "T09 Hickory",
+} as const;
 export const CHAPTER_BOOTSTRAP = {
   slug: "t01-maple",
   name: "T01 Maple",
@@ -110,6 +119,9 @@ const FIXTURE_EMAILS = [
   PUBLIC_AUTHOR_A_EMAIL,
   PUBLIC_AUTHOR_B_EMAIL,
   INTEGRATED_MEMBER_EMAIL,
+  CHAPTER_APPLICATION_REVIEWER_EMAIL,
+  CHAPTER_APPLICATION_APPROVE_EMAIL,
+  CHAPTER_APPLICATION_DECLINE_EMAIL,
 ] as const;
 
 function isoDateFromToday(offsetDays: number): string {
@@ -382,6 +394,87 @@ export async function chapterRecordBySlug(
     description: row.description,
     location: row.location,
     archiveVisibility: row.archive_visibility,
+  };
+}
+
+export interface FixtureApplicationRecord {
+  id: string;
+  status: "pending" | "approved" | "declined";
+  juntoId: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+}
+
+export async function applicationRecordByEmail(
+  email: string,
+): Promise<FixtureApplicationRecord | null> {
+  const res = await restFetch(
+    `/rest/v1/chapter_applications?applicant_email_normalized=eq.${encodeURIComponent(email)}` +
+      "&select=id,status,junto_id,reviewed_by,reviewed_at",
+  );
+  if (res.status >= 300 || !Array.isArray(res.json)) {
+    throw new Error(`application fixture lookup failed (HTTP ${res.status})`);
+  }
+  if (res.json.length === 0) return null;
+  if (res.json.length !== 1 || !isRecord(res.json[0])) {
+    throw new Error("application fixture lookup returned an invalid row count");
+  }
+  const row = res.json[0];
+  if (
+    typeof row.id !== "string" ||
+    !UUID_SHAPE.test(row.id) ||
+    !["pending", "approved", "declined"].includes(String(row.status)) ||
+    (row.junto_id !== null &&
+      (typeof row.junto_id !== "string" || !UUID_SHAPE.test(row.junto_id))) ||
+    (row.reviewed_by !== null &&
+      (typeof row.reviewed_by !== "string" ||
+        !UUID_SHAPE.test(row.reviewed_by))) ||
+    (row.reviewed_at !== null && typeof row.reviewed_at !== "string")
+  ) {
+    throw new Error("application fixture lookup returned malformed data");
+  }
+  return {
+    id: row.id,
+    status: row.status as FixtureApplicationRecord["status"],
+    juntoId: row.junto_id as string | null,
+    reviewedBy: row.reviewed_by as string | null,
+    reviewedAt: row.reviewed_at as string | null,
+  };
+}
+
+export interface FixtureInvitationRecord {
+  juntoId: string;
+  role: "member" | "admin";
+  status: "pending" | "claimed" | "revoked" | "expired";
+}
+
+export async function invitationRecordByEmail(
+  email: string,
+): Promise<FixtureInvitationRecord | null> {
+  const res = await restFetch(
+    `/rest/v1/junto_invitations?email_normalized=eq.${encodeURIComponent(email)}` +
+      "&select=junto_id,role,status",
+  );
+  if (res.status >= 300 || !Array.isArray(res.json)) {
+    throw new Error(`invitation fixture lookup failed (HTTP ${res.status})`);
+  }
+  if (res.json.length === 0) return null;
+  if (res.json.length !== 1 || !isRecord(res.json[0])) {
+    throw new Error("invitation fixture lookup returned an invalid row count");
+  }
+  const row = res.json[0];
+  if (
+    typeof row.junto_id !== "string" ||
+    !UUID_SHAPE.test(row.junto_id) ||
+    (row.role !== "member" && row.role !== "admin") ||
+    !["pending", "claimed", "revoked", "expired"].includes(String(row.status))
+  ) {
+    throw new Error("invitation fixture lookup returned malformed data");
+  }
+  return {
+    juntoId: row.junto_id,
+    role: row.role,
+    status: row.status as FixtureInvitationRecord["status"],
   };
 }
 
@@ -668,6 +761,12 @@ async function seed(): Promise<void> {
         status: "pending",
       },
       {
+        junto_id: JUNTO_A.id,
+        email_normalized: CHAPTER_APPLICATION_REVIEWER_EMAIL,
+        role: "member",
+        status: "pending",
+      },
+      {
         junto_id: JUNTO_P.id,
         email_normalized: PUBLIC_AUTHOR_A_EMAIL,
         // T08 uses this existing public-author identity as Poplar's admin so
@@ -735,7 +834,19 @@ export async function cleanupFixtures(): Promise<void> {
     const chapter = await chapterRecordBySlug(CHAPTER_BOOTSTRAP.slug);
     if (chapter) cleanupJuntoIds.push(chapter.id);
   });
+  await attempt("discover approved application chapter", async () => {
+    const chapter = await chapterRecordBySlug(
+      CHAPTER_APPLICATION_APPROVED.slug,
+    );
+    if (chapter) cleanupJuntoIds.push(chapter.id);
+  });
   const idFilter = `in.(${cleanupJuntoIds.join(",")})`;
+
+  await attempt("delete chapter applications", () =>
+    checkedDelete(
+      `/rest/v1/chapter_applications?applicant_email_normalized=in.(${CHAPTER_APPLICATION_APPROVE_EMAIL},${CHAPTER_APPLICATION_DECLINE_EMAIL})`,
+    ),
+  );
 
   // Essays first: they reference meetings, juntos, and auth users (authors
   // have no cascade), and this also removes essays the journeys created
@@ -825,6 +936,12 @@ export async function verifyFixturesAbsent(): Promise<void> {
     }
   };
   await check(() =>
+    expectEmptyRest(
+      "chapter_applications",
+      `/rest/v1/chapter_applications?applicant_email_normalized=in.(${CHAPTER_APPLICATION_APPROVE_EMAIL},${CHAPTER_APPLICATION_DECLINE_EMAIL})&select=id`,
+    ),
+  );
+  await check(() =>
     expectEmptyRest("essays", `/rest/v1/essays?junto_id=${idFilter}&select=id`),
   );
   await check(() =>
@@ -852,6 +969,12 @@ export async function verifyFixturesAbsent(): Promise<void> {
     expectEmptyRest(
       "bootstrap junto",
       `/rest/v1/juntos?slug=eq.${CHAPTER_BOOTSTRAP.slug}&select=id`,
+    ),
+  );
+  await check(() =>
+    expectEmptyRest(
+      "approved application junto",
+      `/rest/v1/juntos?slug=eq.${CHAPTER_APPLICATION_APPROVED.slug}&select=id`,
     ),
   );
   for (const email of FIXTURE_EMAILS) {

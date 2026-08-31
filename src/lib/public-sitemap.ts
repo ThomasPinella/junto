@@ -24,6 +24,7 @@ export function buildPublicSitemap(
     { url: absolute(routes.essays) },
     { url: absolute(routes.authors) },
     { url: absolute(routes.meetings) },
+    { url: absolute(routes.startChapter) },
     ...chapters.map((chapter) => ({
       url: absolute(routes.junto(chapter.slug)),
     })),

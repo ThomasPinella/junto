@@ -50,6 +50,12 @@ const supabaseEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, "must not be empty"),
 });
 
+const resendEnvSchema = z.object({
+  // Server-only by name and by module boundary; custom application email is
+  // sent from Server Actions and never from browser code.
+  RESEND_API_KEY: z.string().min(1, "must not be empty"),
+});
+
 type EnvSource = Record<string, string | undefined>;
 
 function parseEnv<Schema extends z.ZodObject>(
@@ -74,7 +80,8 @@ function parseEnv<Schema extends z.ZodObject>(
 
 export type SiteEnv = z.infer<typeof siteEnvSchema>;
 export type SupabaseEnv = z.infer<typeof supabaseEnvSchema>;
-export type ApplicationEnv = SiteEnv & SupabaseEnv;
+export type ResendEnv = z.infer<typeof resendEnvSchema>;
+export type ApplicationEnv = SiteEnv & SupabaseEnv & ResendEnv;
 
 export function loadSiteEnv(source: EnvSource = process.env): SiteEnv {
   return parseEnv(siteEnvSchema, source);
@@ -84,8 +91,16 @@ export function loadSupabaseEnv(source: EnvSource = process.env): SupabaseEnv {
   return parseEnv(supabaseEnvSchema, source);
 }
 
+export function loadResendEnv(source: EnvSource = process.env): ResendEnv {
+  return parseEnv(resendEnvSchema, source);
+}
+
 export function loadApplicationEnv(
   source: EnvSource = process.env,
 ): ApplicationEnv {
-  return { ...loadSiteEnv(source), ...loadSupabaseEnv(source) };
+  return {
+    ...loadSiteEnv(source),
+    ...loadSupabaseEnv(source),
+    ...loadResendEnv(source),
+  };
 }

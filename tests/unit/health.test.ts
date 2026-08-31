@@ -7,6 +7,7 @@ const valid = {
   JUNTO_INITIAL_JUNTO_SLUG: "philadelphia",
   NEXT_PUBLIC_SUPABASE_URL: "https://project.supabase.co",
   NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder-publishable-value",
+  RESEND_API_KEY: "placeholder-resend-key",
 };
 
 afterEach(() => vi.unstubAllEnvs());

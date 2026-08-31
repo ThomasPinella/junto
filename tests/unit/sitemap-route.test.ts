@@ -41,6 +41,7 @@ describe("sitemap route", () => {
       "https://junto.example/essays",
       "https://junto.example/authors",
       "https://junto.example/meetings",
+      "https://junto.example/start-a-chapter",
     ]);
     expect(urls.join("\n")).not.toMatch(
       /\/juntos\/|\/essays\/.+|\/authors\/.+|\/meetings\/.+|private|portal|draft|members?/i,

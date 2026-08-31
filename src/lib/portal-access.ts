@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 
 import { routes } from "@/config/routes";
+import { isVerifiedApplicationReviewer } from "@/lib/chapter-application-domain";
 import type { ActiveMembership } from "@/lib/memberships";
 import { listActiveMemberships } from "@/lib/memberships";
 import {
@@ -53,6 +54,20 @@ export async function requirePortalUser(
 export async function requireChapterCreator(): Promise<PortalContext> {
   const context = await requirePortalUser(routes.portalChapterNew);
   if (!context.memberships.some((membership) => membership.role === "admin")) {
+    redirect(routes.portal);
+  }
+  return context;
+}
+
+export async function requireApplicationReviewer(): Promise<PortalContext> {
+  const context = await loadPortalContext();
+  if (!context) {
+    redirect(
+      `${routes.portalSignIn}?next=${encodeURIComponent(routes.portalApplications)}`,
+    );
+  }
+  const { data, error } = await context.supabase.auth.getUser();
+  if (error || !data.user || !isVerifiedApplicationReviewer(data.user)) {
     redirect(routes.portal);
   }
   return context;

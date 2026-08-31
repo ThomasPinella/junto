@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { EnvValidationError, loadSiteEnv, loadSupabaseEnv } from "@/lib/env";
+import {
+  EnvValidationError,
+  loadResendEnv,
+  loadSiteEnv,
+  loadSupabaseEnv,
+} from "@/lib/env";
 
 const validSite = {
   NEXT_PUBLIC_SITE_URL: "http://localhost:3000",
@@ -99,4 +104,22 @@ describe("loadSupabaseEnv", () => {
       ).toThrowError(/NEXT_PUBLIC_SUPABASE_URL/);
     },
   );
+});
+
+describe("loadResendEnv", () => {
+  it("requires one nonempty server-only key", () => {
+    expect(loadResendEnv({ RESEND_API_KEY: "placeholder" })).toEqual({
+      RESEND_API_KEY: "placeholder",
+    });
+    expect(() => loadResendEnv({})).toThrowError(/RESEND_API_KEY/);
+    expect(() => loadResendEnv({ RESEND_API_KEY: "" })).toThrowError(
+      /RESEND_API_KEY/,
+    );
+  });
+
+  it("does not accept a browser-prefixed substitute", () => {
+    expect(() =>
+      loadResendEnv({ NEXT_PUBLIC_RESEND_API_KEY: "unsafe" }),
+    ).toThrowError(/RESEND_API_KEY/);
+  });
 });

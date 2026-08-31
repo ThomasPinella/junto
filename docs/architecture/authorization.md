@@ -17,7 +17,11 @@ Unauthenticated users may not read the profiles base table. Public author
 identity must be derived only from eligible published public essays, so a
 profile without an eligible public essay has no anonymous read path.
 
-Unauthenticated users may not write any records.
+Unauthenticated users may not write records directly. The sole public-write
+exception is the bounded `submit_chapter_application` RPC: it accepts only the
+documented application fields and honeypot, stores no honeypot submission, and
+returns no readable application record. Anonymous and ordinary authenticated
+callers have no table read/list capability.
 
 Public application routes must use the same anonymous eligibility boundary for
 signed-in and signed-out visitors. An authenticated browser session must not
@@ -102,3 +106,17 @@ An administrator of one Junto cannot read or change a private second Junto
 unless they also have an active membership there. Selected-chapter settings
 updates are limited in the application to name, description, location, and
 archive visibility and continue through the existing admin-scoped RLS policy.
+
+## Chapter application review
+
+Chapter application listing and decisions are the sole hardcoded global
+reviewer exception. Both the server route/action and the database RPC must
+independently derive the authenticated Supabase identity, require a verified
+email, normalize it, and compare it to exactly `txpinella@gmail.com` before
+inspecting decision inputs or private application state. Membership or chapter
+admin status does not grant this access.
+
+Decision links may open `/portal/applications`, but approval and decline are
+POST actions only. Approval derives reviewer evidence and creates the private
+chapter plus applicant admin invitation atomically; the client cannot supply a
+reviewer, applicant, role, status, or Junto identifier.

@@ -28,6 +28,13 @@ status, deletion, or ownership transfer. Switching chapters rechecks the live
 membership and role for the newly selected Junto; private chapter names are not
 shown before authentication or outside authorized active memberships.
 
+`/portal/applications` is a separate reviewer-only surface inside the standard
+portal frame. It lists private application details only for the exact verified
+reviewer `txpinella@gmail.com`. Approval allows the reviewer to confirm or edit
+the derived stable slug; approval and decline are explicit POST actions, not
+email-link decisions. The page distinguishes a durable decision from a later
+notification-delivery failure.
+
 ## Portal home
 
 The home view can show:

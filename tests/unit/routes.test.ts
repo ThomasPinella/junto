@@ -9,7 +9,9 @@ describe("routes", () => {
     expect(routes.meetings).toBe("/meetings");
     expect(routes.authors).toBe("/authors");
     expect(routes.about).toBe("/about");
+    expect(routes.startChapter).toBe("/start-a-chapter");
     expect(routes.portal).toBe("/portal");
+    expect(routes.portalApplications).toBe("/portal/applications");
     expect(routes.portalChapterNew).toBe("/portal/chapters/new");
   });
 
