@@ -11,3 +11,4 @@
 - 2026-08-31 04:23 UTC — C01 and C02 integrated as `5f39623` and `9a51a35`; immutable review baseline set to `9a51a35a33af2c73b6655721690dc65a6bbf647a`.
 - 2026-08-31 05:53 UTC — Independent integrated verification passed: 240 unit/component, 460 pgTAP, 186 harness-safety, 19 real Auth, 62 stack-free browser (+2 intentional skips), 132 live browser twice, 1 fixture-absence, schema lint/advisors, production build, and production process probe. Initial stack-free command had two sitemap origin mismatches from omitted test-site env and passed unchanged on exact-origin rerun.
 - 2026-08-31 05:53 UTC — Local Supabase stopped and loopback listeners verified absent; V01 dispatched read-only over `2f9aebe..4954e02` with Codex GPT-5.6 Sol, high effort.
+- 2026-08-31 06:01 UTC — V01 failed with one qualifying medium privacy finding: anonymous RPC/UI outcomes disclose whether an arbitrary normalized email already has a pending application; all other reviewed surfaces passed.
