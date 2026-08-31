@@ -1,0 +1,9 @@
+status: completed
+verdict: live
+application_commit: e06e689
+railway_deployment: 04fa17c7-59f7-483f-9521-17b23ae92e7c
+migration: 20260831043015
+health: ready
+smoke_row_remaining: 0
+http_5xx: 0
+completed_at: 2026-08-31T08:31:47Z

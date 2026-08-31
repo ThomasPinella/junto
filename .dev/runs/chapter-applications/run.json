@@ -1,17 +1,20 @@
 {
   "run_id": "chapter-applications",
-  "stage": "deployment",
+  "stage": "completed",
   "baseline": "2f9aebe237445128a0fd58e72e1bcd4635d5b08a",
-  "review_baseline": "047fd23d9bbf5b4ebc009e898074baf3f5668089",
   "assignment": "D01",
   "reviewer": "R03",
-  "status": "running",
-  "branch": "dev/chapter-applications",
-  "candidate": "80c6c82",
+  "status": "completed",
+  "branch": "main",
+  "application_commit": "e06e689feafcf2760c9d050f8bbb1991de062aa4",
+  "railway_deployment": "04fa17c7-59f7-483f-9521-17b23ae92e7c",
+  "migration": "20260831043015",
+  "production_url": "https://juntoessays.com",
   "email_sender": "Junto <applications@thomaspinella.com>",
   "email_recipient": "txpinella@gmail.com",
   "email_provider_validation_id": "e324f41d-18cf-496f-ac10-869d294367f9",
   "production_applications_slug_conflict": false,
   "production_reviewer_user_exists": true,
-  "updated_at": "2026-08-31T08:20:28Z"
+  "production_smoke_row_remaining": 0,
+  "completed_at": "2026-08-31T08:31:47Z"
 }
