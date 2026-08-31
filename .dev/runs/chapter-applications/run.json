@@ -7,12 +7,12 @@
     "C01": {
       "task": "T01",
       "role": "builder",
-      "state": "ready",
+      "state": "running",
       "branch": "dev/chapter-applications-t01",
       "worktree": "/home/thomas/projects/junto-worktrees/chapter-applications-t01",
-      "base": null,
+      "base": "357ff635e29b7190435a7d002bbd85d3e9ffecdc",
       "result": null,
-      "process_handle": null,
+      "process_handle": "proc_a7df5002d59c",
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "effort": "high"
