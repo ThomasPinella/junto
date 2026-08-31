@@ -1,18 +1,31 @@
 {
   "run_id": "chapter-applications",
-  "stage": "building",
+  "stage": "reconciling",
   "baseline": "2f9aebe237445128a0fd58e72e1bcd4635d5b08a",
   "review_baseline": null,
   "assignments": {
     "C01": {
       "task": "T01",
       "role": "builder",
+      "state": "complete",
+      "branch": "dev/chapter-applications-t01",
+      "worktree": "/home/thomas/projects/junto-worktrees/chapter-applications-t01",
+      "base": "357ff635e29b7190435a7d002bbd85d3e9ffecdc",
+      "result": "42f4545",
+      "process_handle": "proc_a7df5002d59c",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "high"
+    },
+    "R01": {
+      "task": "T01",
+      "role": "reconciler",
       "state": "running",
       "branch": "dev/chapter-applications-t01",
       "worktree": "/home/thomas/projects/junto-worktrees/chapter-applications-t01",
       "base": "357ff635e29b7190435a7d002bbd85d3e9ffecdc",
-      "result": null,
-      "process_handle": "proc_a7df5002d59c",
+      "result": "42f4545",
+      "process_handle": "proc_9ad41bb1e32f",
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "effort": "high"
